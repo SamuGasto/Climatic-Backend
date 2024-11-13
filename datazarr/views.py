@@ -6,7 +6,7 @@ import base64
 import xarray
 import matplotlib.pyplot as plt
 import numpy as np
-from image.creacion_graficos import plot_temperature_with_image
+from image.creacion_graficos import Contour_plot
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -15,7 +15,7 @@ era5 = xarray.open_zarr(
 )
 
 def ObtenerGraficoCalor(dataset):
-    buffer = plot_temperature_with_image(dataset)
+    buffer = Contour_plot(dataset)
     image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
     print("Consiguiendo gráfico de calor")
     return image_base64
