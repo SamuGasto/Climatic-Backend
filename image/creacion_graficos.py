@@ -7,8 +7,6 @@ import os
 import io
 import matplotlib.ticker as mticker  # Para configurar los intervalos de la grilla
 
-print(os.getcwd()+"/image/Mapa_REGION_border-Photoroom.png")
-
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
     chunks={'time': 48},
