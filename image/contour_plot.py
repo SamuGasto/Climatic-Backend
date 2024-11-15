@@ -27,19 +27,19 @@ def Contour_plot(dataset, targetUnit, shading=True):
     """
 
     variable_config = {
-        "t2m": {"label": "Unidades (°C)", "title": "Temperatura a 2 metros sobre la superficie"},
-        "t": {"label": "Unidades (°C)", "title": f"Temperatura a {dataset['level'].values.item()} hPa"},
-        "sst": {"label": "Unidades (°C)", "title": "Temperatura en la superficie del mar"},
-        "q": {"label": "Unidades (g/kg)", "title": f"Humedad específica a {dataset['level'].values.item()} hPa"},
+        "t2m": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a 2 metros sobre la superficie"},
+        "t": {"label": f"Unidades ({targetUnit})", "title": f"Temperatura a {dataset['level'].values.item()} Pa"},
+        "sst": {"label": f"Unidades ({targetUnit})", "title": "Temperatura en la superficie del mar"},
+        "q": {"label": "Unidades (g/kg)", "title": f"Humedad específica a {dataset['level'].values.item()} Pa"},
         "tisr": {"label": "Unidades (W/m^2)", "title": "Radiación solar incidente"},
         "anor": {"label": "Unidades (grados)", "title": "Ángulo de la orografía a escala subcuadrícula"},
         "slor": {"label": "Unidades (grados)", "title": "Pendiente de la orografía"},
         "sdor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía"},
         "sdfor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía filtrada"},
-        "z": {"label": "Unidades (m)", "title": f"Geopotencial a {dataset['level'].values.item()} hPa"},
+        "z": {"label": "Unidades (m)", "title": f"Geopotencial a {dataset['level'].values.item()} Pa"},
         "z_surface": {"label": "Unidades (m)", "title": "Geopotencial en la superficie"},
-        "msl": {"label": "Unidades (hPa)", "title": "Presión media a nivel del mar"},
-        "sp": {"label": "Unidades (hPa)", "title": "Presión en la superficie"},
+        "msl": {"label": "Unidades (Pa)", "title": "Presión media a nivel del mar"},
+        "sp": {"label": "Unidades (Pa)", "title": "Presión en la superficie"},
     }
 
     plt.clf()

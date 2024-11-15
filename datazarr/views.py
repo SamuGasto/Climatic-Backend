@@ -6,7 +6,7 @@ import base64
 import xarray
 import matplotlib.pyplot as plt
 import numpy as np
-from image.contour_plot import Contour_plot
+from image.creacion_graficos import Contour_plot
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -16,24 +16,15 @@ era5 = xarray.open_zarr(
 
 def GenerarImagen(dataset, typechart, targetUnit):
     buffer = io.BytesIO()
-    
+
     if (typechart == "contorno"):
         buffer = Contour_plot(dataset, targetUnit)
     elif (typechart == "vectoriales"):
         pass
-    elif (typechart == "clasificación"):
-        pass
-    elif (typechart == "isobaras"):
-        pass
-    elif (typechart == "lineas"):
-        pass
     elif (typechart == "dispersion"):
         pass
-    elif (typechart == "polares"):
-        pass
-    elif (typechart == "barras"):
-        pass
-    
+    else:
+        return None
     image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
     return image_base64
 
