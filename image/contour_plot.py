@@ -13,7 +13,7 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
-def Contour_plot(dataset, shading=True):
+def Contour_plot(dataset, targetUnit, shading=True):
     """
     Grafica la temperatura sobre una imagen de fondo.
 
@@ -28,15 +28,15 @@ def Contour_plot(dataset, shading=True):
 
     variable_config = {
         "t2m": {"label": "Unidades (°C)", "title": "Temperatura a 2 metros sobre la superficie"},
-        "t": {"label": "Unidades (°C)", "title": "Temperatura (level)"},
+        "t": {"label": "Unidades (°C)", "title": f"Temperatura a {dataset['level'].values.item()} hPa"},
         "sst": {"label": "Unidades (°C)", "title": "Temperatura en la superficie del mar"},
-        "q": {"label": "Unidades (g/kg)", "title": "Humedad específica"},
+        "q": {"label": "Unidades (g/kg)", "title": f"Humedad específica a {dataset['level'].values.item()} hPa"},
         "tisr": {"label": "Unidades (W/m^2)", "title": "Radiación solar incidente"},
         "anor": {"label": "Unidades (grados)", "title": "Ángulo de la orografía a escala subcuadrícula"},
         "slor": {"label": "Unidades (grados)", "title": "Pendiente de la orografía"},
         "sdor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía"},
         "sdfor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía filtrada"},
-        "z": {"label": "Unidades (m)", "title": "Geopotencial"},
+        "z": {"label": "Unidades (m)", "title": f"Geopotencial a {dataset['level'].values.item()} hPa"},
         "z_surface": {"label": "Unidades (m)", "title": "Geopotencial en la superficie"},
         "msl": {"label": "Unidades (hPa)", "title": "Presión media a nivel del mar"},
         "sp": {"label": "Unidades (hPa)", "title": "Presión en la superficie"},
@@ -114,7 +114,7 @@ def Contour_plot(dataset, shading=True):
     # Mostrar etiquetas solo en el borde superior y izquierdo
     bar.right_labels = False
     bar.top_labels = False
-    ax.set_aspect(1.35)  # Cambia el valor para estirar o comprimir el eje y
+    ax.set_aspect(1.28)  # Cambia el valor para estirar o comprimir el eje y
     ax.plot()
     buffer = io.BytesIO()
     fig.savefig(buffer, bbox_inches='tight', pad_inches=0.1, dpi=150, format='png')
