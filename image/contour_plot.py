@@ -13,7 +13,7 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
-def Contour_plot(dataset, shading=True):
+def Contour_plot(dataset, targetUnit, shading=True):
     """
     Grafica la temperatura sobre una imagen de fondo.
 
