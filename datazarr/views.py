@@ -6,6 +6,7 @@ import base64
 import xarray
 import matplotlib.pyplot as plt
 import numpy as np
+from datetime import datetime, timedelta
 from image.contour_plot import Contour_plot
 
 era5 = xarray.open_zarr(
@@ -15,27 +16,24 @@ era5 = xarray.open_zarr(
 )
 
 def GenerarImagen(dataset, typechart, targetUnit):
-    buffer = io.BytesIO()
-    
+    print("[GI] Comenzando a generar imagen...")
     if (typechart == "contorno"):
-        buffer = Contour_plot(dataset, targetUnit)
+        print("[GI] Generando de contorno...")
+        buffer = Contour_plot(dataset=dataset,targetUnit=targetUnit)
+        image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+        print("[GI] ¡Listo! retornando...")
+        return image_base64
     elif (typechart == "vectoriales"):
-        pass
-    elif (typechart == "clasificación"):
-        pass
-    elif (typechart == "isobaras"):
-        pass
-    elif (typechart == "lineas"):
+        print("[GI] Generando de vectoriales...")
+        print("[GI] ¡Listo! retornando...")
         pass
     elif (typechart == "dispersion"):
+        print("[GI] Generando de dispersión...")
+        print("[GI] ¡Listo! retornando...")
         pass
-    elif (typechart == "polares"):
-        pass
-    elif (typechart == "barras"):
-        pass
-    
-    image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
-    return image_base64
+    else:
+        print("[GI] No generando imagen, volviendo...")
+        return None
 
 def ObtenerCoord(coord: str):
     coordendas = coord.split(',')
@@ -69,6 +67,21 @@ def ObtenerTime(time: str):
     
     return timeInitial, timeFinal
 
+def ObtenerRangoFechas(initialDate, finalDate):
+    start_date = datetime.strptime(initialDate, "%Y-%m-%dT%H:%M:%S.%f")
+    end_date = datetime.strptime(finalDate, "%Y-%m-%dT%H:%M:%S.%f")
+
+    # Lista para almacenar las fechas
+    dates = []
+
+    # Generar fechas entre el rango
+    current_date = start_date
+    while current_date <= end_date:
+        dates.append(current_date)
+        current_date += timedelta(days=1)
+        
+    return dates
+
 def ObtenerLevel(time: str):
     l = time.split(',')
     
@@ -91,30 +104,81 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
     try:
         if (timeInitial):
             if (levelInitial):
-                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))
+                print("[GD] Obteniendo datos con nivel y tiempo...")
+                
+                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
                 levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
                 coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
                 
-
-                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, GenerarImagen(coordChunk,typeChart, targetUnit),coordChunk.time.values, coordChunk.level.values ]
+                print("[GD] Obtenidos")
+                imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
+                
+                print("[GD-AF] Generando array final...")
+                finalArray = []
+                print("[GD-AF] Añadiendo latitudes...")
+                finalArray.append(coordChunk.latitude.values)
+                print("[GD-AF] Añadiendo longitudes...")
+                finalArray.append(coordChunk.longitude.values)
+                print("[GD-AF] Añadiendo datos...")
+                finalArray.append(coordChunk.values)
+                print("[GD-AF] Añadiendo imagen...")
+                finalArray.append(imagen)
+                print("[GD-AF] Añadiendo tiempos...")
+                finalArray.append(coordChunk.time.values)
+                print("[GD-AF] Añadiendo niveles...")
+                finalArray.append(coordChunk.level.values)
+                
+                
+                return finalArray 
             else:
-                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal) if timeFinal != 0 else timeInitial))
+                print("[GD] Obteniendo datos con tiempo...")
+                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
                 coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
+                print("[GD] Obtenidos")
+                imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
                 
-                return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, GenerarImagen(coordChunk,typeChart, targetUnit),coordChunk.time.values]
+                print("[GD-AF] Generando array final...")
+                finalArray = []
+                print("[GD-AF] Añadiendo latitudes...")
+                finalArray.append(coordChunk.latitude.values)
+                print("[GD-AF] Añadiendo longitudes...")
+                finalArray.append(coordChunk.longitude.values)
+                print("[GD-AF] Añadiendo datos...")
+                finalArray.append(coordChunk.values)
+                print("[GD-AF] Añadiendo imagen...")
+                finalArray.append(imagen)
+                print("[GD-AF] Añadiendo tiempos...")
+                finalArray.append(coordChunk.time.values)
+                
+                return finalArray
         else:
+            print("[GD] Obteniendo datos...")
             coordChunk = era5[variable].sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
+            print("[GD] Obtenidos")
+            imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
             
-            return [coordChunk.latitude.values,coordChunk.longitude.values, coordChunk.values, GenerarImagen(coordChunk,typeChart, targetUnit)]
+            print("[GD-AF] Generando array final...")
+            finalArray = []
+            print("[GD-AF] Añadiendo latitudes...")
+            finalArray.append(coordChunk.latitude.values)
+            print("[GD-AF] Añadiendo longitudes...")
+            finalArray.append(coordChunk.longitude.values)
+            print("[GD-AF] Añadiendo datos...")
+            finalArray.append(coordChunk.values)
+            print("[GD-AF] Añadiendo imagen...")
+            finalArray.append(imagen)
+            
+            return finalArray
     except:
         
         return "error"
 
 def GenerarJSON(data, units:str):
     try:
+        print("[GJ] Formateando todo a JSON...")
         if (len(data) == 6):
             return {'latitude': data[0].tolist(),
                     'longitude':data[1].tolist(),
@@ -160,7 +224,8 @@ def GenerarRespuesta(variable: str,unit: str,targetUnit:str,latitude: str, longi
     '''
     Función que genera una respuesta JSON extrayendo datos del ERA5.
     '''
-    print([variable,unit,targetUnit,latitude,longitude,typechart,time,level])
+    
+    print(f"[GR] Información inicial {(variable, unit, targetUnit, latitude, longitude, typechart, time, level)}")
     
     latitudeInitial, latitudeFinal = ObtenerCoord(latitude)
     longitudeInitial, longitudeFinal = ObtenerCoord(longitude)
@@ -172,14 +237,20 @@ def GenerarRespuesta(variable: str,unit: str,targetUnit:str,latitude: str, longi
     if (level):
         levelInitial, levelFinal = ObtenerLevel(level)
     
+    print(f"[GR] Información trabajada: {[variable, unit, targetUnit,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal, timeInitial, timeFinal, levelInitial, levelFinal]}")
+    
     data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal,typechart, targetUnit,timeInitial, timeFinal, levelInitial, levelFinal)
     
+    print("[GD] Datos obtenidos")
     response = GenerarJSON(data,unit)
-
+    print("[GJ] ¡Listo!")
+    print("[CK] Checkeando errores...")
     errorCheck = VerificarError(data,response,latitudeInitial, longitudeInitial, timeInitial, levelInitial)
     if (errorCheck != 1):
+        print("[GR] Hubo un error, informando al frontend...")
         return errorCheck
     else:
+        print("[GR] Respondiendo al frontend...")
         return response
 
 # Create your views here.
