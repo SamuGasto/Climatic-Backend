@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
 from image.contour_plot import Contour_plot
+from variables.var_label import variables_label
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -176,11 +177,13 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
         
         return "error"
 
-def GenerarJSON(data, units:str):
+def GenerarJSON(var, data, units:str):
     try:
         print("[GJ] Formateando todo a JSON...")
         if (len(data) == 6):
-            return {'latitude': data[0].tolist(),
+            return {
+                    'var': var,
+                    'latitude': data[0].tolist(),
                     'longitude':data[1].tolist(),
                     'image': data[3],
                     'time': np.datetime_as_string(data[4]).tolist(),
@@ -188,14 +191,18 @@ def GenerarJSON(data, units:str):
                     'data': data[2].tolist(),
                     'units': units}
         elif (len(data) == 5):
-            return {'latitude':data[0].tolist(),
+            return {
+                    'var': var,
+                    'latitude':data[0].tolist(),
                     'longitude':data[1].tolist(),
                     'image': data[3],
                     'time': np.datetime_as_string(data[4]).tolist(),
                     'data': data[2].tolist(),
                     'units': units}
         else:
-            return {'latitude':data[0].tolist(),
+            return {
+                    'var': var,
+                    'latitude':data[0].tolist(),
                     'longitude':data[1].tolist(),
                     'image': data[3],
                     'data': data[2].tolist(),
@@ -242,7 +249,7 @@ def GenerarRespuesta(variable: str,unit: str,targetUnit:str,latitude: str, longi
     data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal,typechart, targetUnit,timeInitial, timeFinal, levelInitial, levelFinal)
     
     print("[GD] Datos obtenidos")
-    response = GenerarJSON(data,unit)
+    response = GenerarJSON(variables_label[variable],data,unit)
     print("[GJ] ¡Listo!")
     print("[CK] Checkeando errores...")
     errorCheck = VerificarError(data,response,latitudeInitial, longitudeInitial, timeInitial, levelInitial)
