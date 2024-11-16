@@ -27,9 +27,9 @@ def Contour_plot(dataset, targetUnit, shading=True):
     
     # Diccionario de variables que NO usan `level` (títulos estáticos)
     variable_config_no_level = {
-        "t2m": {"label": "Unidades (c)", "title": "Temperatura a 2 metros sobre la superficie"},
-        "sst": {"label": "Unidades (c)", "title": "Temperatura en la superficie del mar"},
-        "tisr": {"label": "Unidades (W/m^2)", "title": "Radiación solar incidente"},
+        "t2m": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a 2 metros sobre la superficie"},
+        "sst": {"label": f"Unidades ({targetUnit})", "title": "Temperatura en la superficie del mar"},
+        "tisr": {"label": "Unidades (J/m^2)", "title": "Radiación solar incidente"},
         "anor": {"label": "Unidades (grados)", "title": "Ángulo de la orografía a escala subcuadrícula"},
         "slor": {"label": "Unidades (grados)", "title": "Pendiente de la orografía"},
         "sdor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía"},
@@ -41,9 +41,9 @@ def Contour_plot(dataset, targetUnit, shading=True):
 
     # Diccionario de variables que SÍ usan `level` (títulos dinámicos con `level`)
     variable_config_with_level = {
-        "t": {"label": "Unidades (c)", "title": "Temperatura a {level} Pa"},
+        "t": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a {level} Pa"},
         "q": {"label": "Unidades (g/kg)", "title": "Humedad específica a {level} Pa"},
-        "z": {"label": "Unidades (m)", "title": "Geopotencial a {level} Pa"},
+        "z": {"label": "Unidades (m^2 / s^2)", "title": "Geopotencial a {level} Pa"},
     }
 
     plt.clf()
@@ -56,7 +56,12 @@ def Contour_plot(dataset, targetUnit, shading=True):
     variable = dataset.attrs["short_name"]
     print(variable)
     # Extraer datos y convertir unidades si es necesario
-    datos = dataset.values - 273.15 if variable in ("t2m", "t", "sst") else dataset.values
+    if targetUnit == "C":
+        datos = dataset.values - 273.15 if variable in ("t2m", "t", "sst") else dataset.values
+    elif targetUnit == "F":
+        datos = ((dataset.values - 273.15) * 9/5 + 32) if variable in ("t2m", "t", "sst") else dataset.values
+    else:
+        datos = dataset.values
     lats = dataset['latitude'].values
     lons = dataset['longitude'].values
     date = str(dataset['time'].values)[:10]
@@ -78,10 +83,9 @@ def Contour_plot(dataset, targetUnit, shading=True):
     if shading:
         if variable in ("z", "z_surface", "msl", "sp"):
             cont = ax.contourf(
-                lons, lats, datos, cmap='RdYlBu_r', transform=ccrs.PlateCarree(), levels=15,
+                lons, lats, datos, cmap='Blues', transform=ccrs.PlateCarree(), levels=15,
                 zorder=1
             )
-            ax.clabel(cont, inline=1, fontsize=10, fmt=' {:.0f} '.format, colors='black')
             print("Datos graficados")
         else:
             cont = ax.contourf(
@@ -106,7 +110,7 @@ def Contour_plot(dataset, targetUnit, shading=True):
     elif variable in variable_config_with_level:
         # Variable con 'level', título dinámico
         config = variable_config_with_level[variable]
-        # Obtener el nivel de presión (si está presente) o usar un valor por defecto
+        # Obtener el nivel de presión
         level_value = dataset['level'].values.item()
         title = config["title"].format(level=level_value)
 
@@ -125,7 +129,7 @@ def Contour_plot(dataset, targetUnit, shading=True):
     # Mostrar etiquetas solo en el borde superior y izquierdo
     bar.right_labels = False
     bar.top_labels = False
-    ax.set_aspect(1.28)  # Cambia el valor para estirar o comprimir el eje y
+    ax.set_aspect(1.2)  # Cambia el valor para estirar o comprimir el eje y
     ax.plot()
     buffer = io.BytesIO()
     fig.savefig(buffer, bbox_inches='tight', pad_inches=0.1, dpi=150, format='png')
