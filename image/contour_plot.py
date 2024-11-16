@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-import numpy as np
+import cartopy.feature as cfeature
 import matplotlib.image as mpimg  # Para cargar la imagen
 import xarray
+import numpy as np
 import os
 import io
 import matplotlib.ticker as mticker  # Para configurar los intervalos de la grilla
@@ -19,36 +20,38 @@ def Contour_plot(dataset, targetUnit, shading=True):
 
     Parameters:
     - dataset: Dataset con los datos de temperatura.
-    - image_path: Ruta de la imagen a usar como fondo.
-    - image_path: Ruta de la imagen a usar como fondo en contorno.
-    - image_path2: Ruta de la imagen a usar para cubrir los bordes.
-    - extent: Extensión geográfica de la imagen [min_lon, max_lon, min_lat, max_lat].
+    - targetUnit: Unidad objetivo para la conversión (si es necesario).
     - shading: Booleano para graficar el contorno o no.
     """
-
-    variable_config = {
-        "t2m": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a 2 metros sobre la superficie"},
-        "t": {"label": f"Unidades ({targetUnit})", "title": f"Temperatura a {dataset['level'].values.item()} Pa"},
-        "sst": {"label": f"Unidades ({targetUnit})", "title": "Temperatura en la superficie del mar"},
-        "q": {"label": "Unidades (g/kg)", "title": f"Humedad específica a {dataset['level'].values.item()} Pa"},
+    print(targetUnit)
+    
+    # Diccionario de variables que NO usan `level` (títulos estáticos)
+    variable_config_no_level = {
+        "t2m": {"label": "Unidades (c)", "title": "Temperatura a 2 metros sobre la superficie"},
+        "sst": {"label": "Unidades (c)", "title": "Temperatura en la superficie del mar"},
         "tisr": {"label": "Unidades (W/m^2)", "title": "Radiación solar incidente"},
         "anor": {"label": "Unidades (grados)", "title": "Ángulo de la orografía a escala subcuadrícula"},
         "slor": {"label": "Unidades (grados)", "title": "Pendiente de la orografía"},
         "sdor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía"},
         "sdfor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía filtrada"},
-        "z": {"label": "Unidades (m)", "title": f"Geopotencial a {dataset['level'].values.item()} Pa"},
         "z_surface": {"label": "Unidades (m)", "title": "Geopotencial en la superficie"},
         "msl": {"label": "Unidades (Pa)", "title": "Presión media a nivel del mar"},
         "sp": {"label": "Unidades (Pa)", "title": "Presión en la superficie"},
     }
 
+    # Diccionario de variables que SÍ usan `level` (títulos dinámicos con `level`)
+    variable_config_with_level = {
+        "t": {"label": "Unidades (c)", "title": "Temperatura a {level} Pa"},
+        "q": {"label": "Unidades (g/kg)", "title": "Humedad específica a {level} Pa"},
+        "z": {"label": "Unidades (m)", "title": "Geopotencial a {level} Pa"},
+    }
+
     plt.clf()
-    
-    image_path = os.getcwd()+"/image/Mapa_REGION_border-Photoroom.png"  # Reemplaza con la ruta de tu imagen
-    image_path_C = os.getcwd()+'/image/MAPA_Comunas_sexta_region.png'  # Reemplaza con la ruta de tu imagen
-    image_path2 = os.getcwd()+'/image/Region_FULL_FILL.png'  # Reemplaza con la ruta de tu imagen
-    
-    
+
+    image_path = os.getcwd() + "/image/Mapa_REGION_border-Photoroom.png"  # Reemplaza con la ruta de tu imagen
+    image_path_C = os.getcwd() + '/image/MAPA_Comunas_sexta_region.png'  # Reemplaza con la ruta de tu imagen
+    image_path2 = os.getcwd() + '/image/Region_FULL_FILL.png'  # Reemplaza con la ruta de tu imagen
+
     # Extraer datos del dataset
     variable = dataset.attrs["short_name"]
     print(variable)
@@ -58,10 +61,10 @@ def Contour_plot(dataset, targetUnit, shading=True):
     lons = dataset['longitude'].values
     date = str(dataset['time'].values)[:10]
     date_h = str(dataset['time'].values)[11:16]
-    extent = [108,110,-35,-34]
+    extent = [108, 110, -35, -34]
 
     # Crear figura y ejes con Cartopy
-    fig = plt.figure(figsize=(8,6))
+    fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
 
     # Cargar y mostrar la imagen de fondo
@@ -73,19 +76,19 @@ def Contour_plot(dataset, targetUnit, shading=True):
 
     # Graficar los datos
     if shading:
-      if variable in ("z", "z_surface", "msl", "sp"):
-        cont = ax.contourf(
-            lons, lats, datos, cmap='RdYlBu_r', transform=ccrs.PlateCarree(), levels=15,
-            zorder=1
-        )
-        ax.clabel(cont, inline=1, fontsize=10, fmt=' {:.0f} '.format, colors='black')
-        print("Datos graficados")
-      else:
-        cont = ax.contourf(
-            lons, lats, datos, cmap='RdYlBu_r', transform=ccrs.PlateCarree(), levels=15,
-            zorder=1
-        )
-        print("Datos graficados")
+        if variable in ("z", "z_surface", "msl", "sp"):
+            cont = ax.contourf(
+                lons, lats, datos, cmap='RdYlBu_r', transform=ccrs.PlateCarree(), levels=15,
+                zorder=1
+            )
+            ax.clabel(cont, inline=1, fontsize=10, fmt=' {:.0f} '.format, colors='black')
+            print("Datos graficados")
+        else:
+            cont = ax.contourf(
+                lons, lats, datos, cmap='RdYlBu_r', transform=ccrs.PlateCarree(), levels=15,
+                zorder=1
+            )
+            print("Datos graficados")
     else:
         img = mpimg.imread(image_path_C)
         ax.imshow(img, origin='upper', extent=extent, transform=ccrs.PlateCarree(), zorder=3)
@@ -94,15 +97,23 @@ def Contour_plot(dataset, targetUnit, shading=True):
             zorder=4)
         ax.clabel(cont, inline=1, fontsize=10, fmt=' {:.0f} '.format)
         print("Datos graficados")
-    
 
     # Configurar el colorbar y el título
-    if variable in variable_config:
-        config = variable_config[variable]
-        cbar = plt.colorbar(cont, orientation='vertical', pad=0.06, fraction=0.03, label=config["label"])
-        cbar.locator = mticker.MaxNLocator(nbins=16)
-        cbar.update_ticks()
-        plt.title(f'{config["title"]}\n{date} - {date_h}', size=12, weight='bold')
+    if variable in variable_config_no_level:
+        # Variable sin 'level', título estático
+        config = variable_config_no_level[variable]
+        title = config["title"]
+    elif variable in variable_config_with_level:
+        # Variable con 'level', título dinámico
+        config = variable_config_with_level[variable]
+        # Obtener el nivel de presión (si está presente) o usar un valor por defecto
+        level_value = dataset['level'].values.item()
+        title = config["title"].format(level=level_value)
+
+    cbar = plt.colorbar(cont, orientation='vertical', pad=0.06, fraction=0.03, label=config["label"])
+    cbar.locator = mticker.MaxNLocator(nbins=16)
+    cbar.update_ticks()
+    plt.title(f'{title}\n{date} - {date_h}', size=12, weight='bold')
 
     # Añadir líneas de la grilla
     bar = ax.gridlines(draw_labels=True, linewidth=1, color='black', alpha=0.8)
