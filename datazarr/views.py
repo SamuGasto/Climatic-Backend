@@ -16,6 +16,15 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
+def JuntarComponenteViento(u_chunk,v_chunk):
+    lista_de_tuplas = []
+    values_u = u_chunk.values
+    values_v = v_chunk.values
+    for i in range(len(values_u)-1):
+        lista_de_tuplas.append((values_u[i],values_v[i]))
+    return lista_de_tuplas
+    
+
 def GenerarImagen(dataset, typechart, targetUnit):
     print("[GI] Comenzando a generar imagen...")
     if (typechart == "contorno"):
@@ -26,6 +35,8 @@ def GenerarImagen(dataset, typechart, targetUnit):
         return image_base64
     elif (typechart == "vectoriales"):
         print("[GI] Generando de vectoriales...")
+        #buffer = Vectorial_plot(dataset=dataset,targetUnit=targetUnit) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
+        #image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
         pass
     elif (typechart == "dispersion"):
@@ -107,31 +118,74 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
             if (levelInitial):
                 print("[GD] Obteniendo datos con nivel y tiempo...")
                 
-                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                          longitude=slice(longitudeInitial,longitudeFinal))
-                
-                print("[GD] Obtenidos")
-                imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
-                
-                print("[GD-AF] Generando array final...")
-                finalArray = []
-                print("[GD-AF] Añadiendo latitudes...")
-                finalArray.append(coordChunk.latitude.values)
-                print("[GD-AF] Añadiendo longitudes...")
-                finalArray.append(coordChunk.longitude.values)
-                print("[GD-AF] Añadiendo datos...")
-                finalArray.append(coordChunk.values)
-                print("[GD-AF] Añadiendo imagen...")
-                finalArray.append(imagen)
-                print("[GD-AF] Añadiendo tiempos...")
-                finalArray.append(coordChunk.time.values)
-                print("[GD-AF] Añadiendo niveles...")
-                finalArray.append(coordChunk.level.values)
-                
-                
-                return finalArray 
+                if (variable == "10m_component_of_wind" or variable == "component_of_wind"):
+                    timeChunk_u = era5["u_component_of_wind" if variable == "component_of_wind" else "10m_u_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    coordChunk_u = ""
+                    if (variable == "10m_component_of_wind"):
+                        coordChunk_u = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                    longitude=slice(longitudeInitial,longitudeFinal))
+                    else:
+                        levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                        coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                    longitude=slice(longitudeInitial,longitudeFinal))
+                    
+                    
+                    timeChunk_v = era5["v_component_of_wind" if variable == "component_of_wind" else "10m_v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    coordChunk_v = ""
+                    if (variable == "10m_component_of_wind"):
+                        coordChunk_v = timeChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                    longitude=slice(longitudeInitial,longitudeFinal))
+                    else:
+                        levelChunk_v = timeChunk_v.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                        coordChunk_v = levelChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                    longitude=slice(longitudeInitial,longitudeFinal))
+                    
+                    data_combinada = JuntarComponenteViento(coordChunk_u, coordChunk_v)
+                    
+                    imagen = GenerarImagen(data_combinada,typeChart, targetUnit)
+                    
+                    print("[GD-AF] Generando array final...")
+                    finalArray = []
+                    print("[GD-AF] Añadiendo latitudes...")
+                    finalArray.append(coordChunk_u.latitude.values)
+                    print("[GD-AF] Añadiendo longitudes...")
+                    finalArray.append(coordChunk_u.longitude.values)
+                    print("[GD-AF] Añadiendo datos...")
+                    finalArray.append(data_combinada)
+                    print("[GD-AF] Añadiendo imagen...")
+                    finalArray.append(imagen)
+                    print("[GD-AF] Añadiendo tiempos...")
+                    finalArray.append(coordChunk_u.time.values)
+                    print("[GD-AF] Añadiendo niveles...")
+                    finalArray.append(coordChunk_u.level.values)
+                    
+                    return finalArray
+                else:    
+                    timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                    coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                            longitude=slice(longitudeInitial,longitudeFinal))
+                    
+                    print("[GD] Obtenidos")
+                    imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
+                    
+                    print("[GD-AF] Generando array final...")
+                    finalArray = []
+                    print("[GD-AF] Añadiendo latitudes...")
+                    finalArray.append(coordChunk.latitude.values)
+                    print("[GD-AF] Añadiendo longitudes...")
+                    finalArray.append(coordChunk.longitude.values)
+                    print("[GD-AF] Añadiendo datos...")
+                    finalArray.append(coordChunk.values)
+                    print("[GD-AF] Añadiendo imagen...")
+                    finalArray.append(imagen)
+                    print("[GD-AF] Añadiendo tiempos...")
+                    finalArray.append(coordChunk.time.values)
+                    print("[GD-AF] Añadiendo niveles...")
+                    finalArray.append(coordChunk.level.values)
+                    
+                    
+                    return finalArray 
             else:
                 print("[GD] Obteniendo datos con tiempo...")
                 timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
@@ -292,32 +346,15 @@ def Info(request):
     }
     return JsonResponse(response)
 
-def wind(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time: str):
-    '''
-    Componente U (este-oeste) del viento a 10 metros sobre la superficie
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final  
-    '''
-    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
-
 def u10(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time: str):
     '''
-    Componente U (este-oeste) del viento a 10 metros sobre la superficie
+    Componente del viento a 10 metros sobre la superficie
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final  
     '''
-    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('10m_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
 
-def v10(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time: str):
-    '''
-    Componente V (norte-sur) del viento a 10 metros sobre la superficie
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final  
-    '''
-    return JsonResponse(GenerarRespuesta('10m_v_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
 
 def t2m(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -519,23 +556,14 @@ def tvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
 
 def u(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
-    Es la componente U (este-oeste) del viento
+    Es la componente del viento
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('u_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time,level))
+    return JsonResponse(GenerarRespuesta('component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time,level))
 
-def v(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
-    '''
-    Es la componente V (norte-sur) del viento
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final
-    level: Altura inicio a altura final
-    '''
-    return JsonResponse(GenerarRespuesta('v_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time,level))
 
 def w(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''

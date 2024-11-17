@@ -4,9 +4,8 @@ from . import views
 
 urlpatterns = [
     path('info', views.Info),
-    path('wind/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>', views.wind),
     path('u10/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>', views.u10),
-    path('v10/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>', views.v10),
+    path('u/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>', views.u),
     path('t2m/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>', views.t2m),
     path('anor/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>', views.anor),
     path('isor/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>', views.isor),
@@ -30,7 +29,5 @@ urlpatterns = [
     path('tcc/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>', views.tcc),
     path('tvh/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>', views.tvh),
     path('tvl/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>', views.tvl),
-    path('u/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>/<str:level>', views.u),
-    path('v/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>/<str:level>', views.v),
     path('w/<str:typechart>/<str:unidadmedida>/<str:latitude>/<str:longitude>/<str:time>/<str:level>', views.w),
 ]
