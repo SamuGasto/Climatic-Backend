@@ -87,6 +87,12 @@ def Contour_plot(dataset, targetUnit, shading=True):
                 zorder=1
             )
             print("Datos graficados")
+        elif variable in ("q"):
+            cont = ax.contourf(
+                lons, lats, datos, cmap='PuBu', transform=ccrs.PlateCarree(), levels=15,
+                zorder=1
+            )
+            print("Datos graficados")
         else:
             cont = ax.contourf(
                 lons, lats, datos, cmap='RdYlBu_r', transform=ccrs.PlateCarree(), levels=15,
