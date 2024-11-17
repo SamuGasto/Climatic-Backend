@@ -1,4 +1,5 @@
 variables_label = {
+    "10m_component_of_wind": "Velocidad del viento a 10 metros de la superficie",
     "10m_u_component_of_wind": "Velocidad del viento a 10 metros de la superficie",
     "10m_v_component_of_wind": "Velocidad del viento a 10 metros de la superficie",
     "temperature": "Temperatura",
@@ -24,6 +25,7 @@ variables_label = {
     "toa_incident_solar_radiation": "Radiación solar incidente",
     "total_cloud_cover": "Covertura total de nubes",
     "type_of_low_vegetation": "Tipo de vegetación baja",
+    "component_of_wind": "Velocidad del viento",
     "u_component_of_wind": "La componente U (este-oeste) del viento",
     "v_component_of_wind":"La componente V (norte-sur) del viento",
     "vertical_velocity": "Velocidad vertical en la atmósfera",
