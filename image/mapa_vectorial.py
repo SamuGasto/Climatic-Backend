@@ -4,6 +4,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import xarray
 import os
+import io
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -12,15 +13,17 @@ era5 = xarray.open_zarr(
 )
 
 # Gráfico no interactivo
-def map_vectorial(dataset):
+def Vectorial_plot(dataset, pureData):
 
 
-    variable_config = {
-        'u': {'title': "Campo de velocidad del viento (u) dirección este-oeste", 'u_data': 'u', 'v_data': 'v'},
-        'v': {'title': "Campo de velocidad del viento (v) dirección norte-sur", 'u_data': 'u', 'v_data': 'v'},
-        'u10': {'title': "Campo de velocidad del viento a 10 m (u10)", 'u_data': 'u10', 'v_data': 'v10'},
-        'v10': {'title': "Campo de velocidad del viento a 10 m (v10)", 'u_data': 'u10', 'v_data': 'v10'},
-        'w': {'title': "Velocidad vertical en la atmósfera (w)", 'u_data': 'u10', 'v_data': 'v10'}
+    componente_con_level = {
+        'u': {'title': "Campo de velocidad del viento a {level}"},
+        'v': {'title': "Campo de velocidad del viento a {level}"}
+    }
+
+    componente_sin_level = {
+        'u10': {'title': "Campo de velocidad del viento a 10 metros sobre la superficie"},
+        'v10': {'title': "Campo de velocidad del viento a 10 metros sobre la superficie"}
     }
 
     plt.clf()
@@ -29,7 +32,7 @@ def map_vectorial(dataset):
     image_path_C = os.getcwd() + '/image/MAPA_Comunas_sexta_region.png'  # Reemplaza con la ruta de tu imagen
     image_path2 = os.getcwd() + '/image/Region_FULL_FILL.png'  # Reemplaza con la ruta de tu imagen
     
-    variable = dataset.attrs["short_name"]
+    variable = pureData.attrs["short_name"]
 
     # Definir una grilla de puntos para el espacio de fases
     lats = dataset['latitude'].values
@@ -51,9 +54,15 @@ def map_vectorial(dataset):
 
     
 
-    # Crear un patrón de espacio de fases para u y v
-    u = np.sin(lat) * np.cos(lon)   # Patrón sinusoidal para dirección este-oeste
-    v = -np.cos(lat) * np.sin(lon)  # Patrón sinusoidal para dirección norte-sur
+    # Separar las componentes para graficar
+    u = []
+    v = []
+    for value in dataset:
+        u.append(value[0])
+        v.append(value[1])
+    print("Imprimiendo valores de u y v")
+    print(u)
+    print(v)
 
     # Escalar las flechas para adaptarse al tamaño de la imagen de fondo
     ax.quiver(lon, lat, u, v, color='black', scale=40, scale_units='width', zorder=4)
@@ -64,6 +73,26 @@ def map_vectorial(dataset):
     bar.top_labels = False
     bar.right_labels = False
 
-    plt.title(f'{variable_config[variable]["title"]}\n{date} - {date_h}', size=10, weight='bold')
-    plt.show()  # Mostrar la imagen
+    
+    # Configurar el colorbar y el título
+    if variable in componente_sin_level:
+        # Variable sin 'level', título estático
+        config = componente_sin_level[variable]
+        title = config["title"]
+    elif variable in componente_con_level:
+        # Variable con 'level', título dinámico
+        config = componente_con_level[variable]
+        # Obtener el nivel de presión
+        level_value = pureData['level'].values.item()
+        title = config["title"].format(level=level_value)
+    
+    plt.title(f'{title}\n{date} - {date_h}', size=12, weight='bold')
+
+    ax.set_aspect(1.2)  # Cambia el valor para estirar o comprimir el eje y
+    ax.plot()
+    buffer = io.BytesIO()
+    fig.savefig(buffer, bbox_inches='tight', pad_inches=0.1, dpi=150, format='png')
+    buffer.seek(0)
+
+    return buffer  
 

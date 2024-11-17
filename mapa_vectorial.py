@@ -53,6 +53,4 @@ image_path_C = '/content/MAPA_Comunas_sexta_region.png'
 image_path2 = '/content/Region_FULL_FILL.png'
 extent = [101, 109, -36, -30]
 
-# Llamar a la función con el parámetro "u"
-map_vectorial("u", ds_temp, image_path, image_path_C, image_path2, extent)
 

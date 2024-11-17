@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
 from image.contour_plot import Contour_plot
+from image.mapa_vectorial import Vectorial_plot
 from variables.var_label import variables_label
 
 era5 = xarray.open_zarr(
@@ -35,10 +36,10 @@ def GenerarImagen(dataset, typechart, targetUnit):
         return image_base64
     elif (typechart == "vectoriales"):
         print("[GI] Generando de vectoriales...")
-        #buffer = Vectorial_plot(dataset=dataset,targetUnit=targetUnit) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
-        #image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+        buffer = Vectorial_plot(dataset=dataset,pureData=targetUnit) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
+        image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
-        pass
+        return image_base64
     elif (typechart == "dispersion"):
         print("[GI] Generando de dispersión...")
         print("[GI] ¡Listo! retornando...")
@@ -142,7 +143,7 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                     
                     data_combinada = JuntarComponenteViento(coordChunk_u, coordChunk_v)
                     
-                    imagen = GenerarImagen(data_combinada,typeChart, targetUnit)
+                    imagen = GenerarImagen(data_combinada,typeChart, coordChunk_u)
                     
                     print("[GD-AF] Generando array final...")
                     finalArray = []
