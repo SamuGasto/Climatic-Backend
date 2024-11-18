@@ -18,11 +18,16 @@ era5 = xarray.open_zarr(
 )
 
 def JuntarComponenteViento(u_chunk,v_chunk):
+    print("[W] Generando datos con ambos componentes de viento")
     lista_de_tuplas = []
+    print("[W] Obteniendo valores de U")
     values_u = u_chunk.values
+    print("[W] Obteniendo valores de V")
     values_v = v_chunk.values
+    print("[W] Generando arreglo")
     for i in range(len(values_u)-1):
         lista_de_tuplas.append((values_u[i],values_v[i]))
+    print("[W] ¡Listo! retornando información")
     return lista_de_tuplas
     
 
@@ -115,38 +120,32 @@ def ObtenerLevel(time: str):
 
 def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, typeChart: str, targetUnit:str, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
     try:
+        finalArray = []
+        
         if (timeInitial):
             if (levelInitial):
                 print("[GD] Obteniendo datos con nivel y tiempo...")
                 
-                if (variable == "10m_component_of_wind" or variable == "component_of_wind"):
-                    timeChunk_u = era5["u_component_of_wind" if variable == "component_of_wind" else "10m_u_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    coordChunk_u = ""
-                    if (variable == "10m_component_of_wind"):
-                        coordChunk_u = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                if (variable == "component_of_wind"):
+                    print("[GD] Obtenendo datos primera componente de viento")
+                    timeChunk_u = era5["u_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                    coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                                     longitude=slice(longitudeInitial,longitudeFinal))
-                    else:
-                        levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                        coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                        
+                    print("[GD] Obtenendo datos segunda componente de viento")
+                        
+                    timeChunk_v = era5["v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    levelChunk_v = timeChunk_v.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                    coordChunk_v = levelChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                                     longitude=slice(longitudeInitial,longitudeFinal))
-                    
-                    
-                    timeChunk_v = era5["v_component_of_wind" if variable == "component_of_wind" else "10m_v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    coordChunk_v = ""
-                    if (variable == "10m_component_of_wind"):
-                        coordChunk_v = timeChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                                    longitude=slice(longitudeInitial,longitudeFinal))
-                    else:
-                        levelChunk_v = timeChunk_v.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                        coordChunk_v = levelChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                                    longitude=slice(longitudeInitial,longitudeFinal))
-                    
+
                     data_combinada = JuntarComponenteViento(coordChunk_u, coordChunk_v)
+
+                    print("[GD] Obtenidos")
                     
                     imagen = GenerarImagen(data_combinada,typeChart, coordChunk_u)
                     
-                    print("[GD-AF] Generando array final...")
-                    finalArray = []
                     print("[GD-AF] Añadiendo latitudes...")
                     finalArray.append(coordChunk_u.latitude.values)
                     print("[GD-AF] Añadiendo longitudes...")
@@ -159,8 +158,6 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                     finalArray.append(coordChunk_u.time.values)
                     print("[GD-AF] Añadiendo niveles...")
                     finalArray.append(coordChunk_u.level.values)
-                    
-                    return finalArray
                 else:    
                     timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
                     levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
@@ -170,8 +167,6 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                     print("[GD] Obtenidos")
                     imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
                     
-                    print("[GD-AF] Generando array final...")
-                    finalArray = []
                     print("[GD-AF] Añadiendo latitudes...")
                     finalArray.append(coordChunk.latitude.values)
                     print("[GD-AF] Añadiendo longitudes...")
@@ -184,31 +179,59 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                     finalArray.append(coordChunk.time.values)
                     print("[GD-AF] Añadiendo niveles...")
                     finalArray.append(coordChunk.level.values)
-                    
-                    
-                    return finalArray 
             else:
                 print("[GD] Obteniendo datos con tiempo...")
-                timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                          longitude=slice(longitudeInitial,longitudeFinal))
-                print("[GD] Obtenidos")
-                imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
                 
-                print("[GD-AF] Generando array final...")
-                finalArray = []
-                print("[GD-AF] Añadiendo latitudes...")
-                finalArray.append(coordChunk.latitude.values)
-                print("[GD-AF] Añadiendo longitudes...")
-                finalArray.append(coordChunk.longitude.values)
-                print("[GD-AF] Añadiendo datos...")
-                finalArray.append(coordChunk.values)
-                print("[GD-AF] Añadiendo imagen...")
-                finalArray.append(imagen)
-                print("[GD-AF] Añadiendo tiempos...")
-                finalArray.append(coordChunk.time.values)
-                
-                return finalArray
+                if (variable == "10m_component_of_wind"):
+                    print("[GD] Obtenendo datos primera componente de viento")
+                    timeChunk_u = era5["10m_v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                    coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                    longitude=slice(longitudeInitial,longitudeFinal))
+                    
+                    print("[GD] Obtenendo datos segunda componente de viento")
+                        
+                    timeChunk_v = era5["10m_v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    levelChunk_v = timeChunk_v.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                    coordChunk_v = levelChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                    longitude=slice(longitudeInitial,longitudeFinal))
+
+                    print(coordChunk_v)
+                    data_combinada = JuntarComponenteViento(coordChunk_u, coordChunk_v)
+                    
+                    print("[GD] Obtenidos")
+                    
+                    imagen = GenerarImagen(data_combinada,typeChart, coordChunk_u)
+                    
+                    print("[GD-AF] Añadiendo latitudes...")
+                    finalArray.append(coordChunk_u.latitude.values)
+                    print("[GD-AF] Añadiendo longitudes...")
+                    finalArray.append(coordChunk_u.longitude.values)
+                    print("[GD-AF] Añadiendo datos...")
+                    finalArray.append(data_combinada)
+                    print("[GD-AF] Añadiendo imagen...")
+                    finalArray.append(imagen)
+                    print("[GD-AF] Añadiendo tiempos...")
+                    finalArray.append(coordChunk_u.time.values)
+                    print("[GD-AF] Añadiendo niveles...")
+                    finalArray.append(coordChunk_u.level.values)
+                else:
+                    timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                            longitude=slice(longitudeInitial,longitudeFinal))
+                    print("[GD] Obtenidos")
+                    imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
+                    
+                    print("[GD-AF] Añadiendo latitudes...")
+                    finalArray.append(coordChunk.latitude.values)
+                    print("[GD-AF] Añadiendo longitudes...")
+                    finalArray.append(coordChunk.longitude.values)
+                    print("[GD-AF] Añadiendo datos...")
+                    finalArray.append(coordChunk.values)
+                    print("[GD-AF] Añadiendo imagen...")
+                    finalArray.append(imagen)
+                    print("[GD-AF] Añadiendo tiempos...")
+                    finalArray.append(coordChunk.time.values)
         else:
             print("[GD] Obteniendo datos...")
             coordChunk = era5[variable].sel(latitude=slice(latitudeInitial,latitudeFinal),
@@ -216,8 +239,6 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
             print("[GD] Obtenidos")
             imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
             
-            print("[GD-AF] Generando array final...")
-            finalArray = []
             print("[GD-AF] Añadiendo latitudes...")
             finalArray.append(coordChunk.latitude.values)
             print("[GD-AF] Añadiendo longitudes...")
@@ -226,8 +247,11 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
             finalArray.append(coordChunk.values)
             print("[GD-AF] Añadiendo imagen...")
             finalArray.append(imagen)
-            
-            return finalArray
+        
+        if (variable != "10m_component_of_wind" and variable != "component_of_wind"):
+            pass
+        
+        return finalArray
     except:
         
         return "error"
@@ -304,7 +328,7 @@ def GenerarRespuesta(variable: str,unit: str,targetUnit:str,latitude: str, longi
     data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal,typechart, targetUnit,timeInitial, timeFinal, levelInitial, levelFinal)
     
     print("[GD] Datos obtenidos")
-    response = GenerarJSON(variables_label[variable],data,unit)
+    response = GenerarJSON(variables_label[variable],data,targetUnit)
     print("[GJ] ¡Listo!")
     print("[CK] Checkeando errores...")
     errorCheck = VerificarError(data,response,latitudeInitial, longitudeInitial, timeInitial, levelInitial)

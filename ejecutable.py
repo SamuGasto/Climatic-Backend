@@ -12,5 +12,4 @@ era5 = xarray.open_zarr(
 #val = era5['temperature'].sel(time=(slice("2021-12-31T21:00:00","2021-12-31T23:00:00"))).time
 #print(np.datetime_as_string(val).tolist())
 
-print("mostrando gráfico")
 print(era5.variables)
