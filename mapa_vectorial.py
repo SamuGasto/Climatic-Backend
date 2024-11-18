@@ -3,6 +3,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.image as mpimg
 import numpy as np
+import os
 
 # Gráfico no interactivo
 def map_vectorial(variable, ds_temp, image_path, image_path_C, image_path2, extent):
@@ -48,9 +49,10 @@ def map_vectorial(variable, ds_temp, image_path, image_path_C, image_path2, exte
     plt.show()  # Mostrar la imagen
 
 # Rutas y extensión del mapa
-image_path = '/content/Mapa_REGION_border-Photoroom.png'
-image_path_C = '/content/MAPA_Comunas_sexta_region.png'
-image_path2 = '/content/Region_FULL_FILL.png'
+image_path = os.getcwd() + "/image/Mapa_REGION_border-Photoroom.png"  # Reemplaza con la ruta de tu imagen
+image_path_C = os.getcwd() + '/image/MAPA_Comunas_sexta_region.png'  # Reemplaza con la ruta de tu imagen
+image_path2 = os.getcwd() + '/image/Region_FULL_FILL.png'  # Reemplaza con la ruta de tu imagen
 extent = [101, 109, -36, -30]
 
 
+map_vectorial("u", )

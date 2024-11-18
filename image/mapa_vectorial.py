@@ -14,6 +14,7 @@ era5 = xarray.open_zarr(
 
 # Gráfico no interactivo
 def Vectorial_plot(dataset, pureData):
+    print("[GRAPH] Comienza gráfico")
 
 
     componente_con_level = {
@@ -27,30 +28,34 @@ def Vectorial_plot(dataset, pureData):
     }
 
     plt.clf()
+    print("[GRAPH] dicc de títulos")
 
     image_path = os.getcwd() + "/image/Mapa_REGION_border-Photoroom.png"  # Reemplaza con la ruta de tu imagen
     image_path_C = os.getcwd() + '/image/MAPA_Comunas_sexta_region.png'  # Reemplaza con la ruta de tu imagen
     image_path2 = os.getcwd() + '/image/Region_FULL_FILL.png'  # Reemplaza con la ruta de tu imagen
     
     variable = pureData.attrs["short_name"]
-
+    print("[GRAPH] variable extraida")
     # Definir una grilla de puntos para el espacio de fases
-    lats = dataset['latitude'].values
-    lons = dataset['longitude'].values
+    lats = pureData['latitude'].values
+    lons = pureData['longitude'].values
     lon, lat = np.meshgrid(lons, lats)
+    print("[GRAPH] lats, lons y meshgrid")
 
-    date = str(dataset['time'].values)[:10]
-    date_h = str(dataset['time'].values)[11:16]
+    date = str(pureData['time'].values)[:10]
+    date_h = str(pureData['time'].values)[11:16]
     extent = [108, 110, -35, -34]
 
     fig = plt.figure(figsize=(9, 6), dpi=150)
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
+    print("[GRAPH] figura creada 1")
 
     # Cargar y mostrar las imágenes de fondo
     img = mpimg.imread(image_path)
     ax.imshow(img, origin='upper', extent=extent, transform=ccrs.PlateCarree(), zorder=3)
     img2 = mpimg.imread(image_path2)
     ax.imshow(img2, origin='upper', extent=extent, transform=ccrs.PlateCarree(), zorder=5)
+    print("[GRAPH] Figura creada 2")
 
     
 
@@ -60,18 +65,23 @@ def Vectorial_plot(dataset, pureData):
     for value in dataset:
         u.append(value[0])
         v.append(value[1])
-    print("Imprimiendo valores de u y v")
+    print("[GRAPH] Componentes separados")
     print(u)
     print(v)
 
+    print("lon.shape:", lon.shape)
+    print("lat.shape:", lat.shape)
+    print("u.shape:", u.shape)
+    print("v.shape:", v.shape)
     # Escalar las flechas para adaptarse al tamaño de la imagen de fondo
     ax.quiver(lon, lat, u, v, color='black', scale=40, scale_units='width', zorder=4)
+    print("[GRAPH] quiver listo")
 
     # Añadir detalles al mapa
-    ax.coastlines()
     bar = ax.gridlines(draw_labels=True)
     bar.top_labels = False
     bar.right_labels = False
+    print("[GRAPH] gridlines listo")
 
     
     # Configurar el colorbar y el título
@@ -86,7 +96,8 @@ def Vectorial_plot(dataset, pureData):
         level_value = pureData['level'].values.item()
         title = config["title"].format(level=level_value)
     
-    plt.title(f'{title}\n{date} - {date_h}', size=12, weight='bold')
+    plt.title("Mapa Vectorial", size=12, weight='bold')
+    print("[GRAPH] Título listo")
 
     ax.set_aspect(1.2)  # Cambia el valor para estirar o comprimir el eje y
     ax.plot()
