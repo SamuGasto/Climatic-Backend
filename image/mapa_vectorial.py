@@ -16,6 +16,8 @@ era5 = xarray.open_zarr(
 def Vectorial_plot(dataset, pureData):
     print("[GRAPH] Comienza gráfico")
 
+    print(dataset)
+
 
     componente_con_level = {
         'u': {'title': "Campo de velocidad del viento a {level}"},
@@ -39,7 +41,7 @@ def Vectorial_plot(dataset, pureData):
     # Definir una grilla de puntos para el espacio de fases
     lats = pureData['latitude'].values
     lons = pureData['longitude'].values
-    lon, lat = np.meshgrid(lons, lats)
+    #lon, lat = np.meshgrid(lons, lats)
     print("[GRAPH] lats, lons y meshgrid")
 
     date = str(pureData['time'].values)[:10]
@@ -58,23 +60,26 @@ def Vectorial_plot(dataset, pureData):
     print("[GRAPH] Figura creada 2")
 
     
+    # Separar las componentes u y v de las tuplas en dataset
+    u = [item[0] for item in dataset]  # Extrae la primera componente (u) de cada tupla
+    v = [item[1] for item in dataset]  # Extrae la segunda componente (v) de cada tupla
 
-    # Separar las componentes para graficar
-    u = []
-    v = []
-    for value in dataset:
-        u.append(value[0])
-        v.append(value[1])
+    # Convertir las listas de arrays a un único array 2D
+    u = np.vstack(u)  # Apila los arrays de u verticalmente
+    v = np.vstack(v)  # Apila los arrays de v verticalmente
+
+    print("Dimensiones finales de u:", u.shape)
+    print("Dimensiones finales de v:", v.shape)
     print("[GRAPH] Componentes separados")
-    print(u)
-    print(v)
 
-    print("lon.shape:", lon.shape)
-    print("lat.shape:", lat.shape)
-    print("u.shape:", u.shape)
-    print("v.shape:", v.shape)
+    # Crear una malla que coincida con las dimensiones de u y v
+    adjusted_lats = np.linspace(lats.min(), lats.max(), u.shape[0])
+    adjusted_lons = np.linspace(lons.min(), lons.max(), u.shape[1])
+    lon_adj, lat_adj = np.meshgrid(adjusted_lons, adjusted_lats)
+    print("[GRAPH] meshgrid listo")
+
     # Escalar las flechas para adaptarse al tamaño de la imagen de fondo
-    ax.quiver(lon, lat, u, v, color='black', scale=40, scale_units='width', zorder=4)
+    ax.quiver(lon_adj, lat_adj, u, v, color='black', scale=40, scale_units='width', zorder=4)
     print("[GRAPH] quiver listo")
 
     # Añadir detalles al mapa

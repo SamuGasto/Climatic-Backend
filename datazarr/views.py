@@ -184,7 +184,7 @@ def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, lo
                 
                 if (variable == "10m_component_of_wind"):
                     print("[GD] Obtenendo datos primera componente de viento")
-                    timeChunk_u = era5["10m_v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    timeChunk_u = era5["10m_u_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
                     levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
                     coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                                     longitude=slice(longitudeInitial,longitudeFinal))
