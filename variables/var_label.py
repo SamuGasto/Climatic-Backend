@@ -29,4 +29,5 @@ variables_label = {
     "u_component_of_wind": "La componente U (este-oeste) del viento",
     "v_component_of_wind":"La componente V (norte-sur) del viento",
     "vertical_velocity": "Velocidad vertical en la atmósfera",
+    "total_precipitation": "Precipitación total"
 }

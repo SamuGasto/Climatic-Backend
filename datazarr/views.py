@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from image.contour_plot import Contour_plot
 from image.mapa_vectorial import Vectorial_plot
 from variables.var_label import variables_label
+from variables.unidades_de_medida import variables_unidades_de_medida
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -17,31 +18,55 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
-def JuntarComponenteViento(u_chunk,v_chunk):
-    print("[W] Generando datos con ambos componentes de viento")
+def JuntarValoresTupla(datos1,datos2) -> tuple[float, float]:
     lista_de_tuplas = []
-    print("[W] Obteniendo valores de U")
-    values_u = u_chunk.values
-    print("[W] Obteniendo valores de V")
-    values_v = v_chunk.values
     print("[W] Generando arreglo")
-    for i in range(len(values_u)-1):
-        lista_de_tuplas.append((values_u[i],values_v[i]))
+    for i in range(len(datos1)-1):
+        lista_de_tuplas.append((datos1[i],datos2[i]))
     print("[W] ¡Listo! retornando información")
     return lista_de_tuplas
     
+def ConvertirUnidadDeMedida(var,data, unidadObjetivo):
+    print("[GD-CUM] Convertiendo...")
+    
+    unidadOriginal = variables_unidades_de_medida[var][0]
+    if (unidadObjetivo not in variables_unidades_de_medida[var]):
+            unidadObjetivo = variables_unidades_de_medida[var][0]
+    
+    if (unidadOriginal == unidadObjetivo):
+        print("[GD-CUM] No es necesario convertir, retornando...")
+        return data
+    
+    print("[GD-CUM] Variable: " + var)
+    print("[GD-CUM] Unidad Objetivo: " + unidadObjetivo)
+    print("[GD-CUM] Unidad Original: " + unidadOriginal)
+    
+    new_data = data
+    if (unidadOriginal == "K"):  # Convertir de K a otro sistema de unidades
+        if (unidadObjetivo == "F"):  # Convertir de K a F  
+            new_data = data - 273.15
+            new_data = new_data * 9/5 + 32
+        if (unidadObjetivo == "C"): # Convertir de K a C
+            new_data = (data - 273.15)
 
-def GenerarImagen(dataset, typechart, targetUnit):
+    print("[GD-CUM] Conversiíon exitosa, retornando...")
+            
+    return new_data
+    
+
+def GenerarImagen(dataset, data1, data2, typechart, targetUnit):
     print("[GI] Comenzando a generar imagen...")
     if (typechart == "contorno"):
         print("[GI] Generando de contorno...")
-        buffer = Contour_plot(dataset=dataset,targetUnit=targetUnit)
+        buffer = Contour_plot(dataset, data1, targetUnit)
         image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
         return image_base64
     elif (typechart == "vectoriales"):
         print("[GI] Generando de vectoriales...")
-        buffer = Vectorial_plot(dataset=dataset,pureData=targetUnit) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
+        tuplaList = JuntarValoresTupla(data1,data2)
+        print("[GI] Generando de vectoriales...")
+        buffer = Vectorial_plot(tuplaList,dataset) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
         image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
         return image_base64
@@ -118,226 +143,203 @@ def ObtenerLevel(time: str):
     
     return levelInitial, levelFinal
 
-def ObtenerDatos(variable: str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, typeChart: str, targetUnit:str, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
+def ObtenerDatos(variable: str, second_var:str, latitudeInitial: float, latitudeFinal: float, longitudeInitial: float, longitudeFinal: float, typeChart: str, targetUnit:str, timeInitial: str = None, timeFinal: str = None, levelInitial: str = None,levelFinal: str = None):
     try:
+        var = [variable, second_var]
+        unidadObjetivo = targetUnit
         finalArray = []
+        
+        coordChunk = []
+        secondCoordChunk = []
         
         if (timeInitial):
             if (levelInitial):
                 print("[GD] Obteniendo datos con nivel y tiempo...")
                 
-                if (variable == "component_of_wind"):
-                    print("[GD] Obtenendo datos primera componente de viento")
-                    timeChunk_u = era5["u_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                    coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                                    longitude=slice(longitudeInitial,longitudeFinal))
-                        
-                    print("[GD] Obtenendo datos segunda componente de viento")
-                        
-                    timeChunk_v = era5["v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    levelChunk_v = timeChunk_v.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                    coordChunk_v = levelChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                                    longitude=slice(longitudeInitial,longitudeFinal))
-
-                    data_combinada = JuntarComponenteViento(coordChunk_u, coordChunk_v)
-
-                    print("[GD] Obtenidos")
-                    
-                    imagen = GenerarImagen(data_combinada,typeChart, coordChunk_u)
-                    
-                    print("[GD-AF] Añadiendo latitudes...")
-                    finalArray.append(coordChunk_u.latitude.values)
-                    print("[GD-AF] Añadiendo longitudes...")
-                    finalArray.append(coordChunk_u.longitude.values)
-                    print("[GD-AF] Añadiendo datos...")
-                    finalArray.append(data_combinada)
-                    print("[GD-AF] Añadiendo imagen...")
-                    finalArray.append(imagen)
-                    print("[GD-AF] Añadiendo tiempos...")
-                    finalArray.append(coordChunk_u.time.values)
-                    print("[GD-AF] Añadiendo niveles...")
-                    finalArray.append(coordChunk_u.level.values)
-                else:    
-                    timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                timeChunk = era5[var[0]].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                longitude=slice(longitudeInitial,longitudeFinal))
+                if (second_var):
+                    print("[GD] Obteniendo datos con nivel y tiempo de la segunda variable...")
+                    timeChunk = era5[var[1]].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
                     levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                    coordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                            longitude=slice(longitudeInitial,longitudeFinal))
-                    
-                    print("[GD] Obtenidos")
-                    imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
-                    
-                    print("[GD-AF] Añadiendo latitudes...")
-                    finalArray.append(coordChunk.latitude.values)
-                    print("[GD-AF] Añadiendo longitudes...")
-                    finalArray.append(coordChunk.longitude.values)
-                    print("[GD-AF] Añadiendo datos...")
-                    finalArray.append(coordChunk.values)
-                    print("[GD-AF] Añadiendo imagen...")
-                    finalArray.append(imagen)
-                    print("[GD-AF] Añadiendo tiempos...")
-                    finalArray.append(coordChunk.time.values)
-                    print("[GD-AF] Añadiendo niveles...")
-                    finalArray.append(coordChunk.level.values)
+                    secondCoordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                longitude=slice(longitudeInitial,longitudeFinal))
             else:
                 print("[GD] Obteniendo datos con tiempo...")
-                
-                if (variable == "10m_component_of_wind"):
-                    print("[GD] Obtenendo datos primera componente de viento")
-                    timeChunk_u = era5["10m_u_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    levelChunk_u = timeChunk_u.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                    coordChunk_u = levelChunk_u.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                                    longitude=slice(longitudeInitial,longitudeFinal))
-                    
-                    print("[GD] Obtenendo datos segunda componente de viento")
-                        
-                    timeChunk_v = era5["10m_v_component_of_wind"].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    levelChunk_v = timeChunk_v.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
-                    coordChunk_v = levelChunk_v.sel(latitude=slice(latitudeInitial,latitudeFinal),
-                                                    longitude=slice(longitudeInitial,longitudeFinal))
-
-                    print(coordChunk_v)
-                    data_combinada = JuntarComponenteViento(coordChunk_u, coordChunk_v)
-                    
-                    print("[GD] Obtenidos")
-                    
-                    imagen = GenerarImagen(data_combinada,typeChart, coordChunk_u)
-                    
-                    print("[GD-AF] Añadiendo latitudes...")
-                    finalArray.append(coordChunk_u.latitude.values)
-                    print("[GD-AF] Añadiendo longitudes...")
-                    finalArray.append(coordChunk_u.longitude.values)
-                    print("[GD-AF] Añadiendo datos...")
-                    finalArray.append(data_combinada)
-                    print("[GD-AF] Añadiendo imagen...")
-                    finalArray.append(imagen)
-                    print("[GD-AF] Añadiendo tiempos...")
-                    finalArray.append(coordChunk_u.time.values)
-                    print("[GD-AF] Añadiendo niveles...")
-                    finalArray.append(coordChunk_u.level.values)
-                else:
-                    timeChunk = era5[variable].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
-                    coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                timeChunk = era5[var[0]].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                coordChunk = timeChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
                                             longitude=slice(longitudeInitial,longitudeFinal))
-                    print("[GD] Obtenidos")
-                    imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
-                    
-                    print("[GD-AF] Añadiendo latitudes...")
-                    finalArray.append(coordChunk.latitude.values)
-                    print("[GD-AF] Añadiendo longitudes...")
-                    finalArray.append(coordChunk.longitude.values)
-                    print("[GD-AF] Añadiendo datos...")
-                    finalArray.append(coordChunk.values)
-                    print("[GD-AF] Añadiendo imagen...")
-                    finalArray.append(imagen)
-                    print("[GD-AF] Añadiendo tiempos...")
-                    finalArray.append(coordChunk.time.values)
+                if (second_var):
+                    print("[GD] Obteniendo datos con tiempo de la segunda variable...")
+                    timeChunk = era5[var[1]].sel(time=(slice(timeInitial,timeFinal,24) if timeFinal != 0 else timeInitial))
+                    levelChunk = timeChunk.sel(level=(slice(levelInitial,levelFinal) if levelFinal != 0 else levelInitial))
+                    secondCoordChunk = levelChunk.sel(latitude=slice(latitudeInitial,latitudeFinal),
+                                                longitude=slice(longitudeInitial,longitudeFinal))
         else:
             print("[GD] Obteniendo datos...")
             coordChunk = era5[variable].sel(latitude=slice(latitudeInitial,latitudeFinal),
                                           longitude=slice(longitudeInitial,longitudeFinal))
-            print("[GD] Obtenidos")
-            imagen = GenerarImagen(coordChunk,typeChart, targetUnit)
             
-            print("[GD-AF] Añadiendo latitudes...")
-            finalArray.append(coordChunk.latitude.values)
-            print("[GD-AF] Añadiendo longitudes...")
-            finalArray.append(coordChunk.longitude.values)
-            print("[GD-AF] Añadiendo datos...")
-            finalArray.append(coordChunk.values)
-            print("[GD-AF] Añadiendo imagen...")
-            finalArray.append(imagen)
+            
+        print("[GD] Obtenidos")
+                    
         
-        if (variable != "10m_component_of_wind" and variable != "component_of_wind"):
-            pass
+                    
+        print("[GD-AF] Añadiendo latitudes...")
+        finalArray.append(coordChunk.latitude.values)
+        print("[GD-AF] Añadiendo longitudes...")
+        finalArray.append(coordChunk.longitude.values)
+        
+        print("[GD-AF] Añadiendo datos...")
+        datos1 = ConvertirUnidadDeMedida(var[0],coordChunk.values, unidadObjetivo)
+        datos2 = None
+        if (second_var):
+            datos2 = ConvertirUnidadDeMedida(var[1], secondCoordChunk.values, unidadObjetivo)
+            finalArray.append([datos1, datos2])
+        else:
+            finalArray.append([datos1,None])
+        
+        print("[GD-AF] Añadiendo imagen...")
+        imagen = GenerarImagen(coordChunk,datos1,datos2,typeChart, unidadObjetivo)
+        finalArray.append(imagen)
+        
+        if (timeInitial):
+            print("[GD-AF] Añadiendo tiempos...")
+            finalArray.append(coordChunk.time.values)
+        if (levelInitial):
+            print("[GD-AF] Añadiendo niveles...")
+            finalArray.append(coordChunk.level.values)
         
         return finalArray
     except:
         
         return "error"
 
-def GenerarJSON(var, data, units:str):
+def GenerarJSON(var,second_var, data, units:str):
     try:
+        print("[GJ] Obteniendo nombre de variable...")
+        v1 = variables_label[var]
+        print("[GJ] Generando arreglo de variables...")
+        variable = [v1]
+        if (second_var):
+            print("[GJ] Obteniendo nombre de segunda variable...")
+            v2 = variables_label[second_var]
+            print("[GJ] Añadiendo al arreglo de variables...")
+            variable.append(v2)
+        
+        print("[GJ] Variables: " + str(variable))
+        
         print("[GJ] Formateando todo a JSON...")
+        
+        print("[GJ] Obteniendo latitud...")
+        lat = data[0].tolist()
+        print("[GJ] Obteniendo longitud...")
+        lon = data[1].tolist()
+        
+        print("[GJ] Obteniendo data1...")
+        data1 = data[2][0].tolist()
+        data2 = 0
+        if (second_var):
+            print("[GJ] Obteniendo data2...")
+            data2 = data[2][1].tolist()
+        
+        print("[GJ] Obteniendo imagen...")
+        image = data[3]
+    
+    
         if (len(data) == 6):
-            return {
-                    'var': var,
-                    'latitude': data[0].tolist(),
-                    'longitude':data[1].tolist(),
-                    'image': data[3],
-                    'time': np.datetime_as_string(data[4]).tolist(),
-                    'level': data[5].tolist(),
-                    'data': data[2].tolist(),
-                    'units': units}
+            print("[GJ] Obteniendo el tiempo...")
+            time = np.datetime_as_string(data[4]).tolist()
+            print("[GJ] Obteniendo la altura...")
+            level = data[5].tolist()
+            json = {
+                    'var': variable,
+                    'latitude': lat,
+                    'longitude':lon,
+                    'image': image,
+                    'time': time,
+                    'level': level,
+                    'data': data1,
+                    'data_2': data2,
+                    'units': units
+                    }
+            return json
         elif (len(data) == 5):
-            return {
-                    'var': var,
-                    'latitude':data[0].tolist(),
-                    'longitude':data[1].tolist(),
-                    'image': data[3],
-                    'time': np.datetime_as_string(data[4]).tolist(),
-                    'data': data[2].tolist(),
-                    'units': units}
+            print("[GJ] Obteniendo el tiempo...")
+            time = np.datetime_as_string(data[4]).tolist()
+            json = {
+                    'var': variable,
+                    'latitude': lat,
+                    'longitude':lon,
+                    'image': image,
+                    'time': time,
+                    'data': data1,
+                    'data_2': data2,
+                    'units': units
+                    }
+            return json
         else:
-            return {
-                    'var': var,
-                    'latitude':data[0].tolist(),
-                    'longitude':data[1].tolist(),
-                    'image': data[3],
-                    'data': data[2].tolist(),
-                    'units': units}
+            json = {
+                    'var': variable,
+                    'latitude': lat,
+                    'longitude':lon,
+                    'image': image,
+                    'data': data1,
+                    'data_2': data2,
+                    'units': units
+                    }
+            return json
     except:
         return "error"
         
-def VerificarError(data: str | list, json: str | dict[str,any],latitude: str | float, longitude: str | float, time: str | float = None, level: str | float = None):
-    if (data == "error"):
-        return {"Mensaje del Servidor": "Ocurrió un error al consultar los datos"}
-    elif (json == "error"):
-        return {"Mensaje del Servidor": "Ocurrió un error al generar la respuesta final del servidor"}
-    elif (latitude == "error"):
-        return {"Mensaje del Servidor": "Ocurrió un error al procesar la latitud"}
-    elif (longitude == "error"):
-        return {"Mensaje del Servidor": "Ocurrió un error al procesar la longitud"}
-    elif (time):
-        if (time == "error"):
-            return {"Mensaje del Servidor": "Ocurrió un error al procesar el tiempo"}
-    elif (level):
-        if (level == "error"):
-            return {"Mensaje del Servidor": "Ocurrió un error al procesar el nivel"}
-    return 1
-        
-def GenerarRespuesta(variable: str,unit: str,targetUnit:str,latitude: str, longitude: str,typechart: str, time: str = None, level: str = None):
+def GenerarRespuesta(variable: str, second_var:str,unit: str,targetUnit:str,latitude: str, longitude: str,typechart: str, time: str = None, level: str = None):
     '''
     Función que genera una respuesta JSON extrayendo datos del ERA5.
     '''
     
-    print(f"[GR] Información inicial {(variable, unit, targetUnit, latitude, longitude, typechart, time, level)}")
+    print(f"[GR] Información inicial {(variable, second_var, unit, targetUnit, latitude, longitude, typechart, time, level)}")
     
     latitudeInitial, latitudeFinal = ObtenerCoord(latitude)
+    if (latitudeInitial == "error"):
+        print("[GR] Hubo un error con la latitud, informando al frontend...")
+        return {"Mensaje del Servidor": "Ocurrió un error al procesar la latitud"}
     longitudeInitial, longitudeFinal = ObtenerCoord(longitude)
+    if (longitudeInitial == "error"):
+        print("[GR] Hubo un error con la longitud, informando al frontend...")
+        return {"Mensaje del Servidor": "Ocurrió un error al procesar la longitud"}
     timeInitial = timeFinal = None
     levelInitial = levelFinal = None
     
     if (time):
         timeInitial, timeFinal = ObtenerTime(time)
+        if (timeInitial == "error"):
+            print("[GR] Hubo un error con el tiempo, informando al frontend...")
+            return {"Mensaje del Servidor": "Ocurrió un error al procesar el tiempo"}
     if (level):
         levelInitial, levelFinal = ObtenerLevel(level)
+        if (levelInitial == "error"):
+            print("[GR] Hubo un error con la altura, informando al frontend...")
+            return {"Mensaje del Servidor": "Ocurrió un error al procesar la altura"}
     
-    print(f"[GR] Información trabajada: {[variable, unit, targetUnit,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal, timeInitial, timeFinal, levelInitial, levelFinal]}")
+    print(f"[GR] Información trabajada: {[variable,second_var, unit, targetUnit,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal, timeInitial, timeFinal, levelInitial, levelFinal]}")
     
-    data = ObtenerDatos(variable,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal,typechart, targetUnit,timeInitial, timeFinal, levelInitial, levelFinal)
-    
+    data = ObtenerDatos(variable, second_var,latitudeInitial, latitudeFinal, longitudeInitial, longitudeFinal,typechart, targetUnit,timeInitial, timeFinal, levelInitial, levelFinal)
+    if (data == "error"):
+        print("[GR] Hubo un error con la obtención de datos, informando al frontend...")
+        return {"Mensaje del Servidor": "Ocurrió un error al consultar los datos"}
     print("[GD] Datos obtenidos")
-    response = GenerarJSON(variables_label[variable],data,targetUnit)
+    
+    response = GenerarJSON(variable,second_var,data, targetUnit)
+    if (response == "error"):
+        print("[GR] Hubo un error con generar el JSON, informando al frontend...")
+        return {"Mensaje del Servidor": "Ocurrió un error al generar la respuesta final del servidor"}
+    
     print("[GJ] ¡Listo!")
-    print("[CK] Checkeando errores...")
-    errorCheck = VerificarError(data,response,latitudeInitial, longitudeInitial, timeInitial, levelInitial)
-    if (errorCheck != 1):
-        print("[GR] Hubo un error, informando al frontend...")
-        return errorCheck
-    else:
-        print("[GR] Respondiendo al frontend...")
-        return response
+    print("[GR] Respondiendo al frontend...")
+    return response
+        
 
 # Create your views here.
 def Info(request):
@@ -378,7 +380,7 @@ def u10(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final  
     '''
-    return JsonResponse(GenerarRespuesta('10m_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','10m_v_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
 
 
 def t2m(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
@@ -388,7 +390,7 @@ def t2m(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('2m_temperature','K',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('2m_temperature',None,'K',unidadmedida,latitude,longitude,typechart,time))
         
 def anor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -396,7 +398,7 @@ def anor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('angle_of_sub_gridscale_orography','radians',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('angle_of_sub_gridscale_orography', None,'radians',unidadmedida,latitude,longitude,typechart))
 
 def isor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -404,7 +406,7 @@ def isor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('anisotropy_of_sub_gridscale_orography','not specified',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('anisotropy_of_sub_gridscale_orography',None,'not specified',unidadmedida,latitude,longitude,typechart))
 
 def z(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
@@ -414,7 +416,7 @@ def z(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('geopotential','m**2 / s**2',unidadmedida,latitude,longitude,typechart,time, level))
+    return JsonResponse(GenerarRespuesta('geopotential',None,'m**2 / s**2',unidadmedida,latitude,longitude,typechart,time, level))
 
 def z_surface(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -423,7 +425,7 @@ def z_surface(request,typechart:str,unidadmedida:str,latitude: str, longitude: s
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('geopotential_at_surface','m**2 / s**2',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('geopotential_at_surface',None,'m**2 / s**2',unidadmedida,latitude,longitude,typechart))
 
 def cvh(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -431,7 +433,7 @@ def cvh(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('high_vegetation_cover','(0 - 1)',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('high_vegetation_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
 
 def cl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -439,7 +441,7 @@ def cl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('lake_cover','(0 - 1)',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('lake_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
 
 def lsm(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -447,7 +449,7 @@ def lsm(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('land_sea_mask','(0 - 1)',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('land_sea_mask',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
 
 def cvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -455,7 +457,7 @@ def cvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('low_vegetation_cover','(0 - 1)',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('low_vegetation_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
 
 def msl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -464,7 +466,7 @@ def msl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('mean_sea_level_pressure','Pa',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('mean_sea_level_pressure',None,'Pa',unidadmedida,latitude,longitude,typechart,time))
 
 def siconc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -473,7 +475,7 @@ def siconc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str,
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('sea_ice_cover','(0 - 1)',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('sea_ice_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart,time))
 
 def sst(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -482,7 +484,7 @@ def sst(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('sea_surface_temperature','K',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('sea_surface_temperature',None,'K',unidadmedida,latitude,longitude,typechart,time))
 
 def slor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -490,7 +492,7 @@ def slor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('slope_of_sub_gridscale_orography','no specified',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('slope_of_sub_gridscale_orography',None,'no specified',unidadmedida,latitude,longitude,typechart))
 
 def slt(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -498,7 +500,7 @@ def slt(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('soil_type','no specified',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('soil_type',None,'no specified',unidadmedida,latitude,longitude,typechart))
 
 def q(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
@@ -508,7 +510,7 @@ def q(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('specific_humidity','g / kg',unidadmedida,latitude,longitude,typechart,time,level))
+    return JsonResponse(GenerarRespuesta('specific_humidity',None,'g / kg',unidadmedida,latitude,longitude,typechart,time,level))
 
 def sdfor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -516,7 +518,7 @@ def sdfor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('standard_deviation_of_filtered_subgrid_orography','m',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('standard_deviation_of_filtered_subgrid_orography',None,'m',unidadmedida,latitude,longitude,typechart))
 
 def sdor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -524,7 +526,7 @@ def sdor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('standard_deviation_of_orography','m',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('standard_deviation_of_orography',None,'m',unidadmedida,latitude,longitude,typechart))
 
 def sp(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -533,7 +535,7 @@ def sp(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, tim
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('surface_pressure','Pa',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('surface_pressure',None,'Pa',unidadmedida,latitude,longitude,typechart,time))
 
 def t(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
@@ -543,7 +545,7 @@ def t(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('temperature','K',unidadmedida,latitude,longitude,typechart,time,level))
+    return JsonResponse(GenerarRespuesta('temperature',None,'K',unidadmedida,latitude,longitude,typechart,time,level))
 
 def tisr(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -552,7 +554,7 @@ def tisr(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, t
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('toa_incident_solar_radiation','J / m**2',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('toa_incident_solar_radiation',None,'J / m**2',unidadmedida,latitude,longitude,typechart,time))
 
 def tcc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -561,7 +563,7 @@ def tcc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('total_cloud_cover','(0 - 1)',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('total_cloud_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart,time))
 
 def tvh(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -569,7 +571,7 @@ def tvh(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('type_of_high_vegetation','no specified',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('type_of_high_vegetation',None,'no specified',unidadmedida,latitude,longitude,typechart))
 
 def tvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     '''
@@ -577,7 +579,7 @@ def tvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
     latitude: Arreglo inicio-fin
     longitud: Arreglo inicio-fin
     '''
-    return JsonResponse(GenerarRespuesta('type_of_low_vegetation','no specified',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('type_of_low_vegetation',None,'no specified',unidadmedida,latitude,longitude,typechart))
 
 def u(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
@@ -587,7 +589,7 @@ def u(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time,level))
+    return JsonResponse(GenerarRespuesta('u_component_of_wind','v_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time,level))
 
 
 def w(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
@@ -597,4 +599,4 @@ def w(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('vertical_velocity','Pa / s ',unidadmedida,latitude,longitude,typechart,time,level))
+    return JsonResponse(GenerarRespuesta('vertical_velocity',None,'Pa / s ',unidadmedida,latitude,longitude,typechart,time,level))

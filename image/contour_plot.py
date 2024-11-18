@@ -14,7 +14,7 @@ era5 = xarray.open_zarr(
     consolidated=True,
 )
 
-def Contour_plot(dataset, targetUnit, shading=True):
+def Contour_plot(dataset, data, targetUnit, shading=True):
     """
     Grafica la temperatura sobre una imagen de fondo.
 
@@ -23,7 +23,6 @@ def Contour_plot(dataset, targetUnit, shading=True):
     - targetUnit: Unidad objetivo para la conversión (si es necesario).
     - shading: Booleano para graficar el contorno o no.
     """
-    print(targetUnit)
     
     # Diccionario de variables que NO usan `level` (títulos estáticos)
     variable_config_no_level = {
@@ -56,12 +55,7 @@ def Contour_plot(dataset, targetUnit, shading=True):
     variable = dataset.attrs["short_name"]
     print(variable)
     # Extraer datos y convertir unidades si es necesario
-    if targetUnit == "C":
-        datos = dataset.values - 273.15 if variable in ("t2m", "t", "sst") else dataset.values
-    elif targetUnit == "F":
-        datos = ((dataset.values - 273.15) * 9/5 + 32) if variable in ("t2m", "t", "sst") else dataset.values
-    else:
-        datos = dataset.values
+    datos = data
     lats = dataset['latitude'].values
     lons = dataset['longitude'].values
     date = str(dataset['time'].values)[:10]
