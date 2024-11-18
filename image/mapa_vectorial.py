@@ -5,6 +5,7 @@ import numpy as np
 import xarray
 import os
 import io
+import time
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -48,7 +49,7 @@ def Vectorial_plot(dataset, pureData):
     date_h = str(pureData['time'].values)[11:16]
     extent = [108, 110, -35, -34]
 
-    fig = plt.figure(figsize=(9, 6), dpi=150)
+    fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(1, 1, 1, projection=ccrs.PlateCarree())
     print("[GRAPH] figura creada 1")
 
@@ -86,6 +87,7 @@ def Vectorial_plot(dataset, pureData):
     bar = ax.gridlines(draw_labels=True)
     bar.top_labels = False
     bar.right_labels = False
+    ax.set_aspect(1.2)  # Cambia el valor para estirar o comprimir el eje y
     print("[GRAPH] gridlines listo")
 
     
@@ -104,11 +106,21 @@ def Vectorial_plot(dataset, pureData):
     plt.title("Mapa Vectorial", size=12, weight='bold')
     print("[GRAPH] Título listo")
 
-    ax.set_aspect(1.2)  # Cambia el valor para estirar o comprimir el eje y
     ax.plot()
+    print("[GRAPH] ax.plot listo")
     buffer = io.BytesIO()
+    print("[GRAPH] buffer listo")
     fig.savefig(buffer, bbox_inches='tight', pad_inches=0.1, dpi=150, format='png')
+    print("[GRAPH] fig guardado")
+    output_folder = os.path.join(os.getcwd(), "output")
+    os.makedirs(output_folder, exist_ok=True)  # Crea la carpeta si no existe
+    output_path = os.path.join(output_folder, "grafico_vectorial.png")
+    fig.savefig(output_path, dpi=150, bbox_inches='tight', format='png')
+    print(f"Gráfico guardado en: {output_path}")
+
     buffer.seek(0)
+
+    print("[GRAPH] Gráfico completado")
 
     return buffer  
 
