@@ -36,6 +36,7 @@ def Contour_plot(dataset, data, targetUnit, shading=True):
         "z_surface": {"label": "Unidades (m)", "title": "Geopotencial en la superficie"},
         "msl": {"label": "Unidades (Pa)", "title": "Presión media a nivel del mar"},
         "sp": {"label": "Unidades (Pa)", "title": "Presión en la superficie"},
+        "tp": {"label": "Unidades (mm)", "title": "Precipitación total"},
     }
 
     # Diccionario de variables que SÍ usan `level` (títulos dinámicos con `level`)

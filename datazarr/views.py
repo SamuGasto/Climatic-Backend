@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from image.contour_plot import Contour_plot
 from image.mapa_vectorial import Vectorial_plot
 from variables.var_label import variables_label
-from variables.unidades_de_medida import variables_unidades_de_medida
+from datos.convertir_unidad_de_medida import ConvertirUnidadDeMedida
+from variables.unidades_de_medida import mapeo_correcto
 
 era5 = xarray.open_zarr(
     "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
@@ -25,33 +26,6 @@ def JuntarValoresTupla(datos1,datos2) -> tuple[float, float]:
         lista_de_tuplas.append((datos1[i],datos2[i]))
     print("[W] ¡Listo! retornando información")
     return lista_de_tuplas
-    
-def ConvertirUnidadDeMedida(var,data, unidadObjetivo):
-    print("[GD-CUM] Convertiendo...")
-    
-    unidadOriginal = variables_unidades_de_medida[var][0]
-    if (unidadObjetivo not in variables_unidades_de_medida[var]):
-            unidadObjetivo = variables_unidades_de_medida[var][0]
-    
-    if (unidadOriginal == unidadObjetivo):
-        print("[GD-CUM] No es necesario convertir, retornando...")
-        return data
-    
-    print("[GD-CUM] Variable: " + var)
-    print("[GD-CUM] Unidad Objetivo: " + unidadObjetivo)
-    print("[GD-CUM] Unidad Original: " + unidadOriginal)
-    
-    new_data = data
-    if (unidadOriginal == "K"):  # Convertir de K a otro sistema de unidades
-        if (unidadObjetivo == "F"):  # Convertir de K a F  
-            new_data = data - 273.15
-            new_data = new_data * 9/5 + 32
-        if (unidadObjetivo == "C"): # Convertir de K a C
-            new_data = (data - 273.15)
-
-    print("[GD-CUM] Conversiíon exitosa, retornando...")
-            
-    return new_data
     
 
 def GenerarImagen(dataset, data1, data2, typechart, targetUnit):
@@ -299,6 +273,8 @@ def GenerarRespuesta(variable: str, second_var:str,unit: str,targetUnit:str,lati
     Función que genera una respuesta JSON extrayendo datos del ERA5.
     '''
     
+    targetUnit = mapeo_correcto[targetUnit] if targetUnit in mapeo_correcto else targetUnit
+    unit = mapeo_correcto[unit] if unit in mapeo_correcto else unit
     print(f"[GR] Información inicial {(variable, second_var, unit, targetUnit, latitude, longitude, typechart, time, level)}")
     
     latitudeInitial, latitudeFinal = ObtenerCoord(latitude)
@@ -380,8 +356,17 @@ def u10(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final  
     '''
-    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','10m_v_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('10m_u_component_of_wind','10m_v_component_of_wind','m/s',unidadmedida,latitude,longitude,typechart,time))
 
+def u(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
+    '''
+    Es la componente del viento
+    latitude: Arreglo con pares inicio-fin
+    longitud: Arreglo con pares inicio-fin
+    time: Fecha inicio a fecha final
+    level: Altura inicio a altura final
+    '''
+    return JsonResponse(GenerarRespuesta('u_component_of_wind','v_component_of_wind','m/s',unidadmedida,latitude,longitude,typechart,time,level))
 
 def t2m(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -391,74 +376,17 @@ def t2m(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     time: Fecha inicio a fecha final
     '''
     return JsonResponse(GenerarRespuesta('2m_temperature',None,'K',unidadmedida,latitude,longitude,typechart,time))
-        
-def anor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Ángulo de la orografía a escala subcuadrícula
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('angle_of_sub_gridscale_orography', None,'radians',unidadmedida,latitude,longitude,typechart))
 
-def isor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
+def t(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
-    Describe la anisotropía de la orografía a escala subcuadrícula.
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('anisotropy_of_sub_gridscale_orography',None,'not specified',unidadmedida,latitude,longitude,typechart))
-
-def z(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
-    '''
-    Indica el geopotencial, una magnitud física que combina la altura y la gravedad.
+    Temperatura
     latitude: Arreglo con pares inicio-fin
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('geopotential',None,'m**2 / s**2',unidadmedida,latitude,longitude,typechart,time, level))
-
-def z_surface(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe el geopotencial en la superficie.
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final
-    '''
-    return JsonResponse(GenerarRespuesta('geopotential_at_surface',None,'m**2 / s**2',unidadmedida,latitude,longitude,typechart))
-
-def cvh(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Indica la cobertura de vegetación alta
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('high_vegetation_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
-
-def cl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe la cobertura de lagos
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('lake_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
-
-def lsm(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Es una máscara que diferencia tierra y mar
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('land_sea_mask',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
-
-def cvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe la cobertura de vegetación baja
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('low_vegetation_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart))
-
+    return JsonResponse(GenerarRespuesta('temperature',None,'K',unidadmedida,latitude,longitude,typechart,time,level))
+        
 def msl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
     Es la presión media al nivel del mar
@@ -477,31 +405,6 @@ def siconc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str,
     '''
     return JsonResponse(GenerarRespuesta('sea_ice_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart,time))
 
-def sst(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
-    '''
-    Es la temperatura de la superficie del mar
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final
-    '''
-    return JsonResponse(GenerarRespuesta('sea_surface_temperature',None,'K',unidadmedida,latitude,longitude,typechart,time))
-
-def slor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe la pendiente de la orografía a escala subcuadrícula
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('slope_of_sub_gridscale_orography',None,'no specified',unidadmedida,latitude,longitude,typechart))
-
-def slt(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe el tipo de suelo
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('soil_type',None,'no specified',unidadmedida,latitude,longitude,typechart))
-
 def q(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Indica la humedad específica
@@ -510,23 +413,7 @@ def q(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     time: Fecha inicio a fecha final
     level: Altura inicio a altura final
     '''
-    return JsonResponse(GenerarRespuesta('specific_humidity',None,'g / kg',unidadmedida,latitude,longitude,typechart,time,level))
-
-def sdfor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe la desviación estándar de la orografía filtrada a escala subcuadrícula
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('standard_deviation_of_filtered_subgrid_orography',None,'m',unidadmedida,latitude,longitude,typechart))
-
-def sdor(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Indica la desviación estándar de la orografía
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('standard_deviation_of_orography',None,'m',unidadmedida,latitude,longitude,typechart))
+    return JsonResponse(GenerarRespuesta('specific_humidity',None,'g/kg',unidadmedida,latitude,longitude,typechart,time,level))
 
 def sp(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -537,16 +424,6 @@ def sp(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, tim
     '''
     return JsonResponse(GenerarRespuesta('surface_pressure',None,'Pa',unidadmedida,latitude,longitude,typechart,time))
 
-def t(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
-    '''
-    Temperatura
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final
-    level: Altura inicio a altura final
-    '''
-    return JsonResponse(GenerarRespuesta('temperature',None,'K',unidadmedida,latitude,longitude,typechart,time,level))
-
 def tisr(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
     La radiación solar incidente en el tope de la atmósfera
@@ -554,7 +431,7 @@ def tisr(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, t
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('toa_incident_solar_radiation',None,'J / m**2',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('toa_incident_solar_radiation',None,'J/m^2',unidadmedida,latitude,longitude,typechart,time))
 
 def tcc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
     '''
@@ -565,33 +442,6 @@ def tcc(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, ti
     '''
     return JsonResponse(GenerarRespuesta('total_cloud_cover',None,'(0 - 1)',unidadmedida,latitude,longitude,typechart,time))
 
-def tvh(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe el tipo de vegetación alta
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('type_of_high_vegetation',None,'no specified',unidadmedida,latitude,longitude,typechart))
-
-def tvl(request,typechart:str,unidadmedida:str,latitude: str, longitude: str):
-    '''
-    Describe el tipo de vegetación baja
-    latitude: Arreglo inicio-fin
-    longitud: Arreglo inicio-fin
-    '''
-    return JsonResponse(GenerarRespuesta('type_of_low_vegetation',None,'no specified',unidadmedida,latitude,longitude,typechart))
-
-def u(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
-    '''
-    Es la componente del viento
-    latitude: Arreglo con pares inicio-fin
-    longitud: Arreglo con pares inicio-fin
-    time: Fecha inicio a fecha final
-    level: Altura inicio a altura final
-    '''
-    return JsonResponse(GenerarRespuesta('u_component_of_wind','v_component_of_wind','m / s',unidadmedida,latitude,longitude,typechart,time,level))
-
-
 def w(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str, level:str):
     '''
     Representa la velocidad vertical en la atmósfera
@@ -599,4 +449,13 @@ def w(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('vertical_velocity',None,'Pa / s ',unidadmedida,latitude,longitude,typechart,time,level))
+    return JsonResponse(GenerarRespuesta('vertical_velocity',None,'Pa/s',unidadmedida,latitude,longitude,typechart,time,level))
+
+def tp(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, time:str):
+    '''
+    Representa la velocidad vertical en la atmósfera
+    latitude: Arreglo con pares inicio-fin
+    longitud: Arreglo con pares inicio-fin
+    time: Fecha inicio a fecha final
+    '''
+    return JsonResponse(GenerarRespuesta('total_precipitation',None,'mm',unidadmedida,latitude,longitude,typechart,time))
