@@ -3,7 +3,7 @@ from proceso_generacion_respuesta.generar_json import GenerarJSON
 from proceso_generacion_respuesta.obtencion_datos_de_consulta import ObtenerCoord, ObtenerLevel, ObtenerTime
 from proceso_generacion_respuesta.obtener_datos import ObtenerDatos
 from variables.unidades_de_medida import mapeo_correcto
-
+from django.http import JsonResponse
 
 def GenerarRespuesta(variable: str,unit: str,targetUnit:str,latitude: str, longitude: str,typechart: str, time: str = None, level: str = None):
     '''

@@ -2,7 +2,7 @@ import numpy as np
 from variables.var_label import variables_label
 
 
-def GenerarJSON(var, data, units:str):
+def GenerarJSON(var, data, units):
     try:
         variable = variables_label[var]
         print("[GJ] Formateando todo a JSON...")

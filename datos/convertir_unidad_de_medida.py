@@ -47,6 +47,11 @@ def ConvertirUnidadDeMedida(var,data, unidadObjetivo):
     if (unidadOriginal == "Pa"):  # Convertir de Pa a otro sistema de unidades
         if (unidadObjetivo == "hPa"):  # Convertir de Pa a hPa
             new_data = data / 100
+            
+    if (unidadOriginal == "m"):
+        if (unidadObjetivo == "mm"):
+            new_data = data * 1000
+            
 
     print("[GD-CUM] Conversiíon exitosa, retornando...")
             

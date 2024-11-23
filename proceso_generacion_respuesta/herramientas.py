@@ -55,12 +55,18 @@ def ConvertirUnidadDeMedida(var,data, unidadObjetivo):
             new_data = data * 1000
 
     if (unidadOriginal == "kg/kg"):  # Convertir de kg/kg a otro sistema de unidades
-        if (unidadObjetivo == "g/g"):  # Convertir de kg/kg a g/kg
+        if (unidadObjetivo == "g/g"):  # Convertir de kg/kg a g/g
+            new_data = data * 1
+        if (unidadObjetivo == "g/kg"):  # Convertir de kg/kg a g/kg
             new_data = data * 1000
     
     if (unidadOriginal == "Pa"):  # Convertir de Pa a otro sistema de unidades
         if (unidadObjetivo == "hPa"):  # Convertir de Pa a hPa
             new_data = data / 100
+
+    if (unidadOriginal == "m"):
+        if (unidadObjetivo == "mm"):
+            new_data = data * 1000
 
     print("[GD-CUM] Conversiíon exitosa, retornando...")
             

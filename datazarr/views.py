@@ -112,4 +112,4 @@ def tp(request,typechart:str,unidadmedida:str,latitude: str, longitude: str, tim
     longitud: Arreglo con pares inicio-fin
     time: Fecha inicio a fecha final
     '''
-    return JsonResponse(GenerarRespuesta('total_precipitation','mm',unidadmedida,latitude,longitude,typechart,time))
+    return JsonResponse(GenerarRespuesta('total_precipitation','m',unidadmedida,latitude,longitude,typechart,time))
