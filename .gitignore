@@ -1,2 +1,8 @@
 node_modules
+
+.venv
+*.log
+*.tmp
+__pycache__
+
 .env
