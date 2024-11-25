@@ -8,23 +8,26 @@ from proceso_generacion_respuesta.herramientas import JuntarValoresTupla
 def GenerarImagen(dataset, data1, data2, typechart, targetUnit):
     print("[GI] Comenzando a generar imagen...")
     if (typechart == "contorno"):
-        print("[GI] Generando de contorno...")
+        print("[GI] Generando gráfico de contorno...")
         buffer = Contour_plot(dataset, data1, targetUnit)
         image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
         return image_base64
     elif (typechart == "vectoriales"):
-        print("[GI] Generando de vectoriales...")
+        print("[GI] Generando gráfico vectorial...")
         tuplaList = JuntarValoresTupla(data1,data2)
-        print("[GI] Generando de vectoriales...")
         buffer = Vectorial_plot(tuplaList,dataset) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
         #buffer = Polar_plot(tuplaList,dataset, targetUnit) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
         image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
         return image_base64
-    elif (typechart == "dispersion"):
-        print("[GI] Generando de dispersión...")
+    elif (typechart == "polares"):
+        print("[GI] Generando gráfico polar...")
+        tuplaList = JuntarValoresTupla(data1,data2)
+        buffer = Polar_plot(tuplaList,dataset) #AQUI EL DATASET ES UN ARREGLO DE TUPLAS
+        image_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         print("[GI] ¡Listo! retornando...")
+        return image_base64
         pass
     else:
         print("[GI] No generando imagen, volviendo...")
