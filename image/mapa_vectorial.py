@@ -7,22 +7,16 @@ import os
 import io
 import time
 
-era5 = xarray.open_zarr(
-    "gs://gcp-public-data-arco-era5/ar/1959-2022-full_37-1h-0p25deg-chunk-1.zarr-v2",
-    chunks={'time': 48},
-    consolidated=True,
-)
-
 # Gráfico no interactivo
 def Vectorial_plot(dataset, pureData):
     print("[GRAPH] Comienza gráfico")
-
+    print("Valores dataset:\n")
     print(dataset)
 
 
     componente_con_level = {
-        'u': {'title': "Campo de velocidad del viento a {level}"},
-        'v': {'title': "Campo de velocidad del viento a {level}"}
+        'u': {'title': "Campo de velocidad del viento a {level} Pa"},
+        'v': {'title': "Campo de velocidad del viento a {level} Pa"}
     }
 
     componente_sin_level = {
@@ -80,7 +74,7 @@ def Vectorial_plot(dataset, pureData):
     print("[GRAPH] meshgrid listo")
 
     # Escalar las flechas para adaptarse al tamaño de la imagen de fondo
-    ax.quiver(lon_adj, lat_adj, u, v, color='black', scale=40, scale_units='width', zorder=4)
+    ax.quiver(lon_adj, lat_adj, u, v, color='green', scale=110, scale_units='width', zorder=4)
     print("[GRAPH] quiver listo")
 
     # Añadir detalles al mapa
@@ -103,7 +97,7 @@ def Vectorial_plot(dataset, pureData):
         level_value = pureData['level'].values.item()
         title = config["title"].format(level=level_value)
     
-    plt.title("Mapa Vectorial", size=12, weight='bold')
+    plt.title(f'{title}\n{date} - {date_h}', size=12, weight='bold')
     print("[GRAPH] Título listo")
 
     ax.plot()
@@ -111,12 +105,7 @@ def Vectorial_plot(dataset, pureData):
     buffer = io.BytesIO()
     print("[GRAPH] buffer listo")
     fig.savefig(buffer, bbox_inches='tight', pad_inches=0.1, dpi=150, format='png')
-    print("[GRAPH] fig guardado")
-    output_folder = os.path.join(os.getcwd(), "output")
-    os.makedirs(output_folder, exist_ok=True)  # Crea la carpeta si no existe
-    output_path = os.path.join(output_folder, "grafico_vectorial.png")
-    fig.savefig(output_path, dpi=150, bbox_inches='tight', format='png')
-    print(f"Gráfico guardado en: {output_path}")
+    print("[GRAPH] fig guardado en buffer")
 
     buffer.seek(0)
 
