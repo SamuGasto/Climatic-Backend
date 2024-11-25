@@ -6,12 +6,12 @@ variables_unidades_de_medida = {
     "10m_u_component_of_wind": ["m/s", "km/h", "mph"],
     "10m_v_component_of_wind": ["m/s", "km/h", "mph"],
     "mean_sea_level_pressure": ["Pa", "hPa"],
-    "specific_humidity": ["kg|kg", "g|kg"],
+    "specific_humidity": ["kg/kg", "g/kg"],
     "surface_pressure": ["Pa", "hPa"],
     "toa_incident_solar_radiation": ["J/m^2", "W/m^2"],
     "total_cloud_cover": ["(0-1)"],
     "vertical_velocity": ["Pa/s", "Pa/h"],
-    "total_precipitation": ["mm"],
+    "total_precipitation": ["m", "mm"],
 }
 
 mapeo_correcto = {

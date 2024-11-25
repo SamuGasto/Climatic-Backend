@@ -1,10 +1,9 @@
 variables_label = {
     "10m_component_of_wind": "Velocidad del viento a 10 metros de la superficie",
     "10m_u_component_of_wind": "Velocidad del viento a 10 metros de la superficie",
-    "10m_v_component_of_wind": "Velocidad del viento a 10 metros de la superficie",
     "component_of_wind": "Velocidad del viento",
-    "u_component_of_wind": "La componente U (este-oeste) del viento",
-    "v_component_of_wind":"La componente V (norte-sur) del viento",
+    "u_component_of_wind": "Velocidad del viento",
+    "v_component_of_wind": "Velocidad del viento",
     "2m_temperature": "Temperatura a 2 metros de la superficie",
     "temperature": "Temperatura",
     "mean_sea_level_pressure": "Presión media a nivel del mar",

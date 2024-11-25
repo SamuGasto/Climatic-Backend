@@ -1,4 +1,18 @@
+import numpy as np
 from variables.unidades_de_medida import variables_unidades_de_medida
+
+
+def JuntarValoresTupla(datos1,datos2) -> tuple[float, float]:
+    lista_de_tuplas = []
+    print("[W] Generando arreglo")
+    for i in range(len(datos1)-1):
+        lista_de_tuplas.append((datos1[i],datos2[i]))
+    print("[W] ¡Listo! retornando información")
+    return lista_de_tuplas
+    
+def MagnitudDeUnVector(u,v):
+    magnitud = np.sqrt(u**2 + v**2)
+    return magnitud.tolist()
 
 def ConvertirUnidadDeMedida(var,data, unidadObjetivo):
     print("[GD-CUM] Convertiendo...")
@@ -41,19 +55,19 @@ def ConvertirUnidadDeMedida(var,data, unidadObjetivo):
             new_data = data * 1000
 
     if (unidadOriginal == "kg/kg"):  # Convertir de kg/kg a otro sistema de unidades
-        if (unidadObjetivo == "g/g"):  # Convertir de kg/kg a g/kg
+        if (unidadObjetivo == "g/g"):  # Convertir de kg/kg a g/g
+            new_data = data * 1
+        if (unidadObjetivo == "g/kg"):  # Convertir de kg/kg a g/kg
             new_data = data * 1000
     
     if (unidadOriginal == "Pa"):  # Convertir de Pa a otro sistema de unidades
         if (unidadObjetivo == "hPa"):  # Convertir de Pa a hPa
             new_data = data / 100
-            
+
     if (unidadOriginal == "m"):
         if (unidadObjetivo == "mm"):
             new_data = data * 1000
-            
 
     print("[GD-CUM] Conversiíon exitosa, retornando...")
             
     return new_data
-    
