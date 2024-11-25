@@ -26,24 +26,23 @@ def Contour_plot(dataset, data, targetUnit, shading=True):
     
     # Diccionario de variables que NO usan `level` (títulos estáticos)
     variable_config_no_level = {
-        "t2m": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a 2 metros de la superficie"},
+        "t2m": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a 2 metros sobre la superficie"},
         "sst": {"label": f"Unidades ({targetUnit})", "title": "Temperatura en la superficie del mar"},
-        "tisr": {"label": "Unidades (J/m^2)", "title": "Radiación solar incidente"},
-        "anor": {"label": "Unidades (grados)", "title": "Ángulo de la orografía a escala subcuadrícula"},
-        "slor": {"label": "Unidades (grados)", "title": "Pendiente de la orografía"},
-        "sdor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía"},
-        "sdfor": {"label": "Unidades (grados)", "title": "Desviación estándar de la orografía filtrada"},
-        "z_surface": {"label": "Unidades (m)", "title": "Geopotencial en la superficie"},
-        "msl": {"label": "Unidades (Pa)", "title": "Presión media a nivel del mar"},
-        "sp": {"label": "Unidades (Pa)", "title": "Presión en la superficie"},
-        "tp": {"label": "Unidades (mm)", "title": "Precipitación total"},
+        "tisr": {"label": f"Unidades ({targetUnit})", "title": "Radiación solar incidente"},
+        "anor": {"label": f"Unidades ({targetUnit})", "title": "Ángulo de la orografía a escala subcuadrícula"},
+        "slor": {"label": f"Unidades ({targetUnit})", "title": "Pendiente de la orografía"},
+        "sdor": {"label": f"Unidades ({targetUnit})", "title": "Desviación estándar de la orografía"},
+        "sdfor": {"label": f"Unidades ({targetUnit})", "title": "Desviación estándar de la orografía filtrada"},
+        "z_surface": {"label": f"Unidades ({targetUnit})", "title": "Geopotencial en la superficie"},
+        "msl": {"label": f"Unidades ({targetUnit})", "title": "Presión media a nivel del mar"},
+        "sp": {"label": f"Unidades ({targetUnit})", "title": "Presión en la superficie"},
     }
 
     # Diccionario de variables que SÍ usan `level` (títulos dinámicos con `level`)
     variable_config_with_level = {
         "t": {"label": f"Unidades ({targetUnit})", "title": "Temperatura a {level} Pa"},
-        "q": {"label": "Unidades (g/kg)", "title": "Humedad específica a {level} Pa"},
-        "z": {"label": "Unidades (m^2 / s^2)", "title": "Geopotencial a {level} Pa"},
+        "q": {"label": f"Unidades ({targetUnit})", "title": "Humedad específica a {level} Pa"},
+        "z": {"label": f"Unidades ({targetUnit})", "title": "Geopotencial a {level} Pa"},
     }
 
     plt.clf()

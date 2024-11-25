@@ -10,7 +10,7 @@ import time
 # Gráfico no interactivo
 def Vectorial_plot(dataset, pureData):
     print("[GRAPH] Comienza gráfico")
-
+    print("Valores dataset:\n")
     print(dataset)
 
 
@@ -74,7 +74,7 @@ def Vectorial_plot(dataset, pureData):
     print("[GRAPH] meshgrid listo")
 
     # Escalar las flechas para adaptarse al tamaño de la imagen de fondo
-    ax.quiver(lon_adj, lat_adj, u, v, color='black', scale=30, scale_units='width', zorder=4)
+    ax.quiver(lon_adj, lat_adj, u, v, color='green', scale=110, scale_units='width', zorder=4)
     print("[GRAPH] quiver listo")
 
     # Añadir detalles al mapa
