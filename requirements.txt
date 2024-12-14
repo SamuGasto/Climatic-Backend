@@ -1,0 +1,9 @@
+Django
+django-cors-headers
+numpy
+matplotlib
+xarray
+zarr
+gcsfs
+dask
+Cartopy
